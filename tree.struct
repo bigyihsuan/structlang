@@ -1,0 +1,7 @@
+type tree[T] = struct[T]{ v t; l,r either[tree[T],nil] };
+
+let root = tree[int]{v: 10, l:nil, r:nil};
+root->l = tree[int]{v: 15, l:nil, r:nil};
+root->r = tree[int]{v: 5, l:nil, r:nil};
+
+println(root);
