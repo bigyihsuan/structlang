@@ -65,6 +65,7 @@ func (l *Lexer) Lex() token.Token {
 		lexeme := l.resetLexeme()
 		return token.NewToken(symbolTokenType, lexeme, offset, line, column)
 	}
+	// arrow
 	if l.currentRune() == '-' && l.nextRune() == '>' {
 		l.addCurrent()
 		l.addCurrent()
@@ -107,7 +108,7 @@ func (l *Lexer) Lex() token.Token {
 		}
 	}
 
-	return token.NewToken(token.ILLEGAL, l.lexeme, offset, line, column)
+	return token.NewToken(token.ILLEGAL, string(l.currentRune()), offset, line, column)
 }
 
 func (l *Lexer) comment() {

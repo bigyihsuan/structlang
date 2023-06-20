@@ -1,7 +1,7 @@
-type tree[T] = struct[T]{ v t; l,r either[tree[T],nil] };
+type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };
 
-let root = tree[int]{v: 10, l:nil, r:nil};
-root->l = tree[int]{v: 15, l:nil, r:nil};
-root->r = tree[int]{v: 5, l:nil, r:nil};
+let root = Tree[int]{v: 10, l:nil, r:nil};
+root->l = Tree[int]{v: 15, l:nil, r:nil};
+root->r = Tree[int]{v: 5, l:nil, r:nil};
 
 println(root);
