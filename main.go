@@ -36,5 +36,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, errs)
 		return
 	}
-	pretty.Println(tree)
+	// pretty.Println(tree)
+	astparser := parser.NewAstParser(tree)
+	ast := astparser.Parse()
+	pretty.Println(ast)
 }

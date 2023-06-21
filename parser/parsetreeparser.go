@@ -9,23 +9,22 @@ import (
 	"github.com/bigyihsuan/structlang/util"
 )
 
-// TODO: parse errors, and how to recover
-type Parser struct {
+type ParseTreeParser struct {
 	tokens []token.Token
 	idx    int
 }
 
-func NewParser(tokens []token.Token) Parser {
-	return Parser{
+func NewParser(tokens []token.Token) ParseTreeParser {
+	return ParseTreeParser{
 		tokens: tokens,
 		idx:    0,
 	}
 }
 
-func (p Parser) hasMoreTokens() bool {
+func (p ParseTreeParser) hasMoreTokens() bool {
 	return p.idx < len(p.tokens)
 }
-func (p *Parser) getNextToken() (tok *token.Token, err error) {
+func (p *ParseTreeParser) getNextToken() (tok *token.Token, err error) {
 	if !p.hasMoreTokens() {
 		return tok, errors.New("out of tokens")
 	}
@@ -33,7 +32,7 @@ func (p *Parser) getNextToken() (tok *token.Token, err error) {
 	p.idx++
 	return tok, nil
 }
-func (p Parser) peekNextToken() (tok *token.Token, err error) {
+func (p ParseTreeParser) peekNextToken() (tok *token.Token, err error) {
 	if !p.hasMoreTokens() {
 		return tok, errors.New("out of tokens")
 	}
@@ -41,7 +40,7 @@ func (p Parser) peekNextToken() (tok *token.Token, err error) {
 	return tok, nil
 }
 
-func (p *Parser) expectGet(tt token.TokenType) (*token.Token, error) {
+func (p *ParseTreeParser) expectGet(tt token.TokenType) (*token.Token, error) {
 	tok, err := p.getNextToken()
 	if err != nil {
 		return tok, err
@@ -51,7 +50,7 @@ func (p *Parser) expectGet(tt token.TokenType) (*token.Token, error) {
 	}
 	return tok, nil
 }
-func (p *Parser) expectGetAny(tts ...token.TokenType) (*token.Token, error) {
+func (p *ParseTreeParser) expectGetAny(tts ...token.TokenType) (*token.Token, error) {
 	tok, err := p.getNextToken()
 	if err != nil {
 		return tok, err
@@ -64,7 +63,7 @@ func (p *Parser) expectGetAny(tts ...token.TokenType) (*token.Token, error) {
 	return tok, fmt.Errorf("expected any token %s, got `%s` at `%v`", tts, tok.Type(), tok.Position())
 }
 
-func (p *Parser) Parse() (stmts []parsetree.Stmt, errs error) {
+func (p *ParseTreeParser) Parse() (stmts []parsetree.Stmt, errs error) {
 	for p.hasMoreTokens() {
 		s, e := p.Stmt()
 		if e != nil {
@@ -74,7 +73,7 @@ func (p *Parser) Parse() (stmts []parsetree.Stmt, errs error) {
 	}
 	return stmts, errs
 }
-func (p *Parser) Stmt() (stmt parsetree.Stmt, errs error) {
+func (p *ParseTreeParser) Stmt() (stmt parsetree.Stmt, errs error) {
 	stmterr := errors.New("in stmt")
 	kw, err := p.peekNextToken()
 	if err != nil {
@@ -91,7 +90,7 @@ func (p *Parser) Stmt() (stmt parsetree.Stmt, errs error) {
 		return nil, errors.Join(stmterr, fmt.Errorf("unknown for Stmt: type=`%s` lexeme=`%s`", kw.Type(), kw.Lexeme()))
 	}
 }
-func (p *Parser) TypeDef() (td parsetree.TypeDef, errs error) {
+func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
 	tderr := errors.New("in typedef")
 	type_, err := p.expectGet(token.TYPE)
 	if err != nil {
@@ -114,9 +113,9 @@ func (p *Parser) TypeDef() (td parsetree.TypeDef, errs error) {
 		return td, errors.Join(tderr, err)
 	}
 
-	return parsetree.TypeDef{Type: *type_, Typename: typename, Eq: *eq, StructDef: structDef, Sc: *sc}, nil
+	return parsetree.TypeDef{TypeKw: *type_, TypeName: typename, Eq: *eq, StructDef: structDef, Sc: *sc}, nil
 }
-func (p *Parser) Type() (ty parsetree.Type, errs error) {
+func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	tyerr := errors.New("in type")
 	typename, err := p.expectGetAny(token.IDENT, token.NIL)
 	if err != nil {
@@ -128,7 +127,7 @@ func (p *Parser) Type() (ty parsetree.Type, errs error) {
 	}
 	return parsetree.Type{TypeName: *typename, TypeVars: typevars}, nil
 }
-func (p *Parser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
+func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 	tvserr := errors.New("in typevars")
 	if peeked, err := p.peekNextToken(); err != nil {
 		return tvs, errors.Join(tvserr, err)
@@ -150,7 +149,7 @@ func (p *Parser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 
 	return &parsetree.TypeVars{Lbracket: *lbracket, TypeVars: typevars, Rbracket: *rbracket}, nil
 }
-func (p *Parser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.Type, token.Token], errs error) {
+func (p *ParseTreeParser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.Type, token.Token], errs error) {
 	tvperr := errors.New("in typevar params")
 	for {
 		if peeked, err := p.peekNextToken(); err != nil {
@@ -177,7 +176,7 @@ func (p *Parser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.Type, tok
 		tv = append(tv, util.Pair[parsetree.Type, *token.Token]{First: typename, Last: comma})
 	}
 }
-func (p *Parser) StructDef() (st parsetree.Struct, errs error) {
+func (p *ParseTreeParser) StructDef() (st parsetree.StructDef, errs error) {
 	sderr := errors.New("in structdef")
 	structKw, err := p.expectGet(token.STRUCT)
 	if err != nil {
@@ -200,10 +199,10 @@ func (p *Parser) StructDef() (st parsetree.Struct, errs error) {
 		return st, errors.Join(sderr, err)
 	}
 
-	return parsetree.Struct{StructKw: *structKw, TypeVars: typeVars, Lbrace: *lbrace, Fields: fields, Rbrace: *rbrace}, nil
+	return parsetree.StructDef{StructKw: *structKw, TypeVars: typeVars, Lbrace: *lbrace, Fields: fields, Rbrace: *rbrace}, nil
 }
 
-func (p *Parser) StructFields() (f []parsetree.StructField, errs error) {
+func (p *ParseTreeParser) StructFields() (f []parsetree.StructField, errs error) {
 	sferr := errors.New("in struct fields")
 	for {
 		if peeked, err := p.peekNextToken(); err != nil {
@@ -235,7 +234,7 @@ func (p *Parser) StructFields() (f []parsetree.StructField, errs error) {
 		// no trailing scs allowed
 	}
 }
-func (p *Parser) NameList() (names parsetree.SeparatedList[token.Token, token.Token], errs error) {
+func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token, token.Token], errs error) {
 	nlerr := errors.New("in namelist")
 	for {
 		if peeked, err := p.peekNextToken(); err != nil {

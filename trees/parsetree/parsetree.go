@@ -6,12 +6,13 @@ import (
 )
 
 type Stmt interface{ stmtTag() }
+type Expr interface{ exprTag() }
 
 type TypeDef struct {
-	Type      token.Token
-	Typename  Type
+	TypeKw    token.Token
+	TypeName  Type
 	Eq        token.Token
-	StructDef Struct
+	StructDef StructDef
 	Sc        token.Token
 }
 
@@ -28,7 +29,7 @@ type TypeVars struct {
 	Rbracket token.Token
 }
 
-type Struct struct {
+type StructDef struct {
 	StructKw token.Token
 	TypeVars *TypeVars
 	Lbrace   token.Token
