@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"github.com/bigyihsuan/structlang/token"
+
 	"github.com/bigyihsuan/structlang/trees/ast"
 	"github.com/bigyihsuan/structlang/trees/parsetree"
 )
@@ -26,7 +28,15 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 		typename := a.Type(stmt.TypeName)
 		structdef := a.StructDef(stmt.StructDef)
 		firsttoken := stmt.TypeKw
-		return ast.TypeDef{TypeName: typename, StructDef: structdef, FirstToken: firsttoken}
+		lasttoken := stmt.Sc
+		return ast.TypeDef{
+			TypeName:  typename,
+			StructDef: structdef,
+			Tokens: ast.Tokens{
+				FirstToken: &firsttoken,
+				LastToken:  &lasttoken,
+			},
+		}
 	}
 
 	return
@@ -36,18 +46,35 @@ func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 	typename := type_.TypeName.Lexeme()
 	typevars := a.TypeVars(type_.TypeVars)
 	firsttoken := type_.TypeName
-	return ast.Type{TypeName: typename, TypeVars: typevars, FirstToken: firsttoken}
+	var lasttoken token.Token
+	if len(typevars.Types) == 0 {
+		lasttoken = firsttoken
+	} else {
+		lasttoken = type_.TypeVars.Rbracket
+	}
+	return ast.Type{
+		TypeName: typename,
+		TypeVars: typevars,
+		Tokens: ast.Tokens{
+			FirstToken: &firsttoken,
+			LastToken:  &lasttoken,
+		},
+	}
 }
 
 func (a AstParser) TypeVars(typeVars *parsetree.TypeVars) (tv ast.TypeVars) {
 	if typeVars == nil {
+		tv.FirstToken = nil
+		tv.LastToken = nil
 		return
 	}
 	for _, pair := range typeVars.TypeVars {
 		typename := pair.First
 		type_ := a.Type(typename)
-		tv = append(tv, type_)
+		tv.Types = append(tv.Types, type_)
 	}
+	tv.FirstToken = &typeVars.Lbracket
+	tv.LastToken = &typeVars.Rbracket
 	return tv
 }
 
@@ -58,7 +85,15 @@ func (a AstParser) StructDef(structdef parsetree.StructDef) (sd ast.StructDef) {
 	}
 	fields := a.StructFields(structdef.Fields)
 	firsttoken := structdef.StructKw
-	return ast.StructDef{TypeVars: tv, Fields: fields, FirstToken: firsttoken}
+	lasttoken := structdef.Rbrace
+	return ast.StructDef{
+		TypeVars: tv,
+		Fields:   fields,
+		Tokens: ast.Tokens{
+			FirstToken: &firsttoken,
+			LastToken:  &lasttoken,
+		},
+	}
 }
 
 func (a AstParser) StructFields(fields []parsetree.StructField) (f []ast.StructField) {
@@ -72,6 +107,7 @@ func (a AstParser) StructField(field parsetree.StructField) (f ast.StructField) 
 		f.Names = append(f.Names, name.First.Lexeme())
 	}
 	f.Type = a.Type(field.Type)
-	f.FirstToken = field.Names[0].First
+	f.FirstToken = &field.Names[0].First
+	f.LastToken = f.Type.LastToken
 	return f
 }
