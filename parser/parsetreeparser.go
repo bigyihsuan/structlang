@@ -214,6 +214,8 @@ func (p *ParseTreeParser) StructFields() (f []parsetree.StructField, errs error)
 		names, err := p.NameList()
 		if err != nil {
 			return f, errors.Join(sferr, errors.New("expected name list"), err)
+		} else if len(names) < 1 {
+			return f, errors.Join(sferr, errors.New("name list must be len > 0"))
 		}
 		typename, err := p.Type()
 		if err != nil {

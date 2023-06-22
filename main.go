@@ -7,8 +7,6 @@ import (
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
-
-	"github.com/kr/pretty"
 )
 
 func main() {
@@ -39,5 +37,7 @@ func main() {
 	// pretty.Println(tree)
 	astparser := parser.NewAstParser(tree)
 	ast := astparser.Parse()
-	pretty.Println(ast)
+	for _, node := range ast {
+		fmt.Println(node.GetFirstToken())
+	}
 }

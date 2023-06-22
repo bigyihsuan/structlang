@@ -25,7 +25,8 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 	case parsetree.TypeDef:
 		typename := a.Type(stmt.TypeName)
 		structdef := a.StructDef(stmt.StructDef)
-		return ast.TypeDef{TypeName: typename, StructDef: structdef}
+		firsttoken := stmt.TypeKw
+		return ast.TypeDef{TypeName: typename, StructDef: structdef, FirstToken: firsttoken}
 	}
 
 	return
@@ -34,7 +35,8 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 	typename := type_.TypeName.Lexeme()
 	typevars := a.TypeVars(type_.TypeVars)
-	return ast.Type{TypeName: typename, TypeVars: typevars}
+	firsttoken := type_.TypeName
+	return ast.Type{TypeName: typename, TypeVars: typevars, FirstToken: firsttoken}
 }
 
 func (a AstParser) TypeVars(typeVars *parsetree.TypeVars) (tv ast.TypeVars) {
@@ -55,7 +57,8 @@ func (a AstParser) StructDef(structdef parsetree.StructDef) (sd ast.StructDef) {
 		tv = a.TypeVars(structdef.TypeVars)
 	}
 	fields := a.StructFields(structdef.Fields)
-	return ast.StructDef{TypeVars: tv, Fields: fields}
+	firsttoken := structdef.StructKw
+	return ast.StructDef{TypeVars: tv, Fields: fields, FirstToken: firsttoken}
 }
 
 func (a AstParser) StructFields(fields []parsetree.StructField) (f []ast.StructField) {
@@ -69,5 +72,6 @@ func (a AstParser) StructField(field parsetree.StructField) (f ast.StructField) 
 		f.Names = append(f.Names, name.First.Lexeme())
 	}
 	f.Type = a.Type(field.Type)
+	f.FirstToken = field.Names[0].First
 	return f
 }
