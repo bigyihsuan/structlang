@@ -10,7 +10,7 @@ type Tokens struct {
 }
 
 type TypeDef struct {
-	TypeName  Type
+	Type      Type
 	StructDef StructDef
 	Tokens
 }
@@ -18,8 +18,8 @@ type TypeDef struct {
 func (td TypeDef) stmtTag() {}
 
 type Type struct {
-	TypeName string
-	TypeVars TypeVars
+	Name string
+	Vars TypeVars
 	Tokens
 }
 
@@ -29,8 +29,8 @@ type TypeVars struct {
 }
 
 type StructDef struct {
-	TypeVars TypeVars
-	Fields   []StructField
+	Vars   TypeVars
+	Fields []StructField
 	Tokens
 }
 

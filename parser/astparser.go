@@ -30,7 +30,7 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 		firsttoken := stmt.TypeKw
 		lasttoken := stmt.Sc
 		return ast.TypeDef{
-			TypeName:  typename,
+			Type:      typename,
 			StructDef: structdef,
 			Tokens: ast.Tokens{
 				FirstToken: &firsttoken,
@@ -53,8 +53,8 @@ func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 		lasttoken = type_.TypeVars.Rbracket
 	}
 	return ast.Type{
-		TypeName: typename,
-		TypeVars: typevars,
+		Name: typename,
+		Vars: typevars,
 		Tokens: ast.Tokens{
 			FirstToken: &firsttoken,
 			LastToken:  &lasttoken,
@@ -87,8 +87,8 @@ func (a AstParser) StructDef(structdef parsetree.StructDef) (sd ast.StructDef) {
 	firsttoken := structdef.StructKw
 	lasttoken := structdef.Rbrace
 	return ast.StructDef{
-		TypeVars: tv,
-		Fields:   fields,
+		Vars:   tv,
+		Fields: fields,
 		Tokens: ast.Tokens{
 			FirstToken: &firsttoken,
 			LastToken:  &lasttoken,
