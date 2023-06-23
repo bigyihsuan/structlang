@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kr/pretty"
+
 	"github.com/bigyihsuan/structlang/eval"
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
-	"github.com/bigyihsuan/structlang/trees/ast"
 )
 
 func main() {
@@ -25,10 +26,10 @@ func main() {
 		tok = lex.Lex()
 	}
 
-	for _, tok := range tokens {
-		fmt.Println(tok.String())
-	}
-	fmt.Println()
+	// for _, tok := range tokens {
+	// 	fmt.Println(tok.String())
+	// }
+	// fmt.Println()
 
 	p := parser.NewParser(tokens)
 	tree, errs := p.Parse()
@@ -36,17 +37,11 @@ func main() {
 		fmt.Fprintln(os.Stderr, errs)
 		return
 	}
-	// pretty.Println(tree)
 	astparser := parser.NewAstParser(tree)
 	asttree := astparser.Parse()
-	for _, node := range asttree {
-		switch node := node.(type) {
-		case ast.TypeDef:
-			fmt.Println(node.FirstToken, node.LastToken)
-		}
-	}
+	// pretty.Println(asttree)
 
 	evaluator := eval.NewEvaluator(asttree)
 	evaluator.Stmt(&evaluator.BaseEnv)
-	fmt.Println(evaluator.BaseEnv)
+	pretty.Println(evaluator.BaseEnv)
 }

@@ -1,10 +1,8 @@
 package eval
 
 import (
-	"fmt"
-
 	"github.com/bigyihsuan/structlang/trees/ast"
-	"golang.org/x/exp/slices"
+	"github.com/kr/pretty"
 )
 
 type Evaluator struct {
@@ -30,38 +28,49 @@ func (e *Evaluator) Stmt(currEnv *Env) error {
 }
 
 func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
-	name := NewIdentifier(stmt.Type.Name)
-	vars := []Identifier{}
-	for _, v := range stmt.Type.Vars.Types {
-		vars = append(vars, NewIdentifier(v.Name))
-	}
-	structvars := []Identifier{}
-	for _, v := range stmt.StructDef.Vars.Types {
-		structvars = append(vars, NewIdentifier(v.Name))
-	}
-	fmt.Println(structvars)
-	if !slices.Equal(vars, structvars) {
-		return fmt.Errorf("mismatched type params: %v and %v", vars, structvars)
-	}
-	fields := []Field{}
-	for _, field := range stmt.StructDef.Fields {
-		for _, f := range field.Names {
-			fname := NewIdentifier(f)
-			ftype := NewIdentifier(field.Type.Name)
-			fields = append(fields, Field{
-				Name: fname,
-				Type: ftype,
-			})
-		}
-	}
-	fmt.Println(fields)
+	typename, _ := e.TypeName(currEnv, stmt.Type)
+	structdef, _ := e.StructDef(currEnv, stmt.StructDef)
 
-	ty := Type{
-		Name:   name,
-		Vars:   vars,
-		Fields: fields,
-	}
-	currEnv.DefineType(name, ty)
+	currEnv.DefineType(typename.Name, structdef)
+	return nil
+}
+
+func (e *Evaluator) Type(currEnv *Env, type_ ast.Type) error {
 
 	return nil
+}
+
+func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (Struct, error) {
+	var structType Struct
+	structType.TypeParams = make(map[Identifier]TypeName)
+	structType.Fields = make(map[Identifier]TypeName)
+
+	for _, typeVar := range structDef.Vars.Types {
+		tv, _ := e.TypeName(currEnv, typeVar)
+		structType.TypeParams[tv.Name] = tv
+	}
+
+	for _, structField := range structDef.Fields {
+		fieldType, _ := e.TypeName(currEnv, structField.Type)
+		for _, fieldName := range structField.Names {
+			name := NewIdentifier(fieldName)
+			structType.Fields[name] = fieldType
+		}
+	}
+	pretty.Println(structType)
+
+	return structType, nil
+}
+
+func (e *Evaluator) TypeName(currEnv *Env, typename ast.Type) (TypeName, error) {
+	var type_ TypeName
+	name := NewIdentifier(typename.Name)
+	vars := []TypeName{}
+	for _, typeArg := range typename.Vars.Types {
+		arg, _ := e.TypeName(currEnv, typeArg)
+		vars = append(vars, arg)
+	}
+	type_.Name = name
+	type_.Vars = vars
+	return type_, nil
 }

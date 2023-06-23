@@ -1,12 +1,16 @@
 package eval
 
-type Type struct {
-	Name   Identifier
-	Vars   []Type
-	Fields []Field
+type TypeName struct {
+	Name Identifier
+	Vars []TypeName
 }
 
-type Field struct {
-	Name Identifier
-	Type Type
+type Struct struct {
+	TypeParams map[Identifier]TypeName
+	Fields     map[Identifier]TypeName
+}
+
+type StructInstance struct {
+	TypeParams map[Identifier]Struct
+	Fields     map[Identifier]Value
 }
