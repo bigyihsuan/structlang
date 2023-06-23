@@ -22,6 +22,9 @@ func (e Env) MakeChild() Env {
 	}
 }
 
+func (e *Env) DefineType(name Identifier, structType Type) {
+	e.Types[name] = structType
+}
 func (e Env) GetType(name Identifier) *Type {
 	if t, ok := e.Types[name]; ok {
 		return &t
@@ -32,6 +35,9 @@ func (e Env) GetType(name Identifier) *Type {
 	}
 }
 
+func (e *Env) DefineVariable(name Identifier, value Value) {
+	e.Variables[name] = value
+}
 func (e Env) GetVariable(name Identifier) *Value {
 	if t, ok := e.Variables[name]; ok {
 		return &t
