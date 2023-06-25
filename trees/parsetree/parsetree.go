@@ -18,15 +18,19 @@ type VarDef struct {
 
 func (vd VarDef) stmtTag() {}
 
-type Lvalue struct {
-	BaseName token.Token
-	*FieldAccess
+type Lvalue interface {
+	Expr
+	lvalueTag()
 }
 
 type FieldAccess struct {
-	Arrow token.Token
 	Lvalue
+	Arrow token.Token
+	Ident
 }
+
+func (fa FieldAccess) exprTag()   {}
+func (fa FieldAccess) lvalueTag() {}
 
 type StructLiteral struct {
 	TypeName Type
@@ -35,10 +39,11 @@ type StructLiteral struct {
 	Rbrace   token.Token
 }
 
-func (sl StructLiteral) exprTag() {}
+func (sl StructLiteral) exprTag()   {}
+func (sl StructLiteral) lvalueTag() {}
 
 type StructLiteralField struct {
-	FieldName token.Token
+	FieldName Ident
 	Colon     token.Token
 	Value     Expr
 }
@@ -47,7 +52,15 @@ type Literal struct {
 	token.Token
 }
 
-func (l Literal) exprTag() {}
+func (l Literal) exprTag()   {}
+func (l Literal) lvalueTag() {}
+
+type Ident struct {
+	Name token.Token
+}
+
+func (i Ident) exprTag()   {}
+func (i Ident) lvalueTag() {}
 
 type TypeDef struct {
 	TypeKw    token.Token
@@ -60,7 +73,7 @@ type TypeDef struct {
 func (td TypeDef) stmtTag() {}
 
 type Type struct {
-	TypeName token.Token
+	TypeName Ident
 	TypeVars *TypeVars
 }
 
@@ -79,7 +92,7 @@ type StructDef struct {
 }
 
 type StructField struct {
-	Names SeparatedList[token.Token, token.Token] // ident and comma
+	Names SeparatedList[Ident, token.Token] // ident and comma
 	Type  Type
 	Sc    *token.Token
 }

@@ -90,7 +90,7 @@ func (p *ParseTreeParser) Parse() (stmts []parsetree.Stmt, errs error) {
 	for p.hasMoreTokens() {
 		s, e := p.Stmt()
 		if e != nil {
-			return stmts, e
+			return stmts, errors.Join(errors.New("in parse tree parser"), e)
 		}
 		stmts = append(stmts, s)
 	}
@@ -147,40 +147,37 @@ func (p *ParseTreeParser) VarDef() (vd parsetree.VarDef, errs error) {
 
 func (p *ParseTreeParser) Lvalue() (lv parsetree.Lvalue, err error) {
 	lverr := errors.New("in lvalue")
-	basename, err := p.expectGet(token.IDENT)
+	// check for ident first
+	ident, err := p.expectGet(token.IDENT)
 	if err != nil {
 		return lv, errors.Join(lverr, err)
 	}
-
-	if res, err := p.nextTokenIs(token.ARROW); err != nil {
+	isArrow, err := p.nextTokenIs(token.ARROW)
+	if err != nil {
 		return lv, errors.Join(lverr, err)
-	} else if !res {
-		return parsetree.Lvalue{
-			BaseName:    *basename,
-			FieldAccess: nil,
+	} else if isArrow {
+		p.putBackToken()          // piut back ident
+		lvalue, err := p.Lvalue() // recurse
+		if err != nil {
+			return lv, errors.Join(lverr, errors.New("expected lvalue with `->`"), err)
+		}
+		arrow, err := p.expectGet(token.ARROW)
+		if err != nil {
+			return lv, errors.Join(lverr, err)
+		}
+		ident, err := p.expectGet(token.IDENT)
+		if err != nil {
+			return lv, errors.Join(lverr, errors.New("expected identifier with `->`"), err)
+		}
+		return parsetree.FieldAccess{
+			Lvalue: lvalue,
+			Arrow:  *arrow,
+			Ident:  parsetree.Ident{Name: *ident},
 		}, err
+	} else {
+		// single ident
+		return parsetree.Ident{Name: *ident}, nil
 	}
-	fa, err := p.FieldAccess()
-	if err != nil {
-		return lv, errors.Join(lverr, err)
-	}
-	return parsetree.Lvalue{
-		BaseName:    *basename,
-		FieldAccess: &fa,
-	}, err
-}
-
-func (p *ParseTreeParser) FieldAccess() (fa parsetree.FieldAccess, err error) {
-	faerr := errors.New("in field access")
-	arrow, err := p.getNextToken()
-	if err != nil {
-		return fa, errors.Join(faerr, err)
-	}
-	lv, err := p.Lvalue()
-	if err != nil {
-		return fa, errors.Join(faerr, errors.New("expected lvalue for field access"), err)
-	}
-	return parsetree.FieldAccess{Arrow: *arrow, Lvalue: lv}, err
 }
 
 func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
@@ -211,7 +208,7 @@ func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
 
 func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	tyerr := errors.New("in type")
-	typename, err := p.expectGetAny(token.IDENT, token.NIL)
+	typename, err := p.Ident()
 	if err != nil {
 		return ty, errors.Join(tyerr, err)
 	}
@@ -219,7 +216,7 @@ func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	if err != nil {
 		return ty, errors.Join(tyerr, errors.New("expected typevars"), err)
 	}
-	return parsetree.Type{TypeName: *typename, TypeVars: typevars}, nil
+	return parsetree.Type{TypeName: typename, TypeVars: typevars}, nil
 }
 
 func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
@@ -332,7 +329,7 @@ func (p *ParseTreeParser) StructFields() (f []parsetree.StructField, errs error)
 	}
 }
 
-func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token, token.Token], errs error) {
+func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[parsetree.Ident, token.Token], errs error) {
 	nlerr := errors.New("in namelist")
 	for {
 		if peeked, err := p.peekNextToken(); err != nil {
@@ -341,7 +338,7 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token,
 			// exit when not ident
 			return names, nil
 		}
-		name, err := p.expectGet(token.IDENT)
+		name, err := p.Ident()
 		if err != nil {
 			return names, errors.Join(nlerr, err)
 		}
@@ -349,14 +346,14 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token,
 			return names, errors.Join(nlerr, err)
 		} else if tt := peeked.Type(); tt != token.COMMA {
 			// exit when ident but no comma
-			names = append(names, util.Pair[token.Token, *token.Token]{First: *name, Last: nil})
+			names = append(names, util.Pair[parsetree.Ident, *token.Token]{First: name, Last: nil})
 			return names, nil
 		}
 		comma, err := p.expectGet(token.COMMA)
 		if err != nil {
 			return names, errors.Join(nlerr, err)
 		}
-		names = append(names, util.Pair[token.Token, *token.Token]{First: *name, Last: comma})
+		names = append(names, util.Pair[parsetree.Ident, *token.Token]{First: name, Last: comma})
 		// no trailing comma allowed
 	}
 }
@@ -386,8 +383,32 @@ func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
 }
 
 func (p *ParseTreeParser) IdentOrStructLiteral() (expr parsetree.Expr, err error) {
-	// TODO
-	return
+	islerr := errors.New("in ident/struct literal")
+	ident, err := p.expectGet(token.IDENT)
+	if err != nil {
+		return expr, errors.Join(islerr, err)
+	}
+	if hasStructLiteral, err := p.nextTokenIsAny(token.LBRACE, token.LBRACKET); err != nil {
+		return expr, errors.Join(islerr, err)
+	} else if hasStructLiteral {
+		p.putBackToken()
+		sl, err := p.StructLiteral()
+		if err != nil {
+			return expr, errors.Join(islerr, errors.New("expected struct literal with `{`"), err)
+		}
+		return sl, nil
+	} else {
+		return parsetree.Ident{Name: *ident}, nil
+	}
+}
+
+func (p *ParseTreeParser) Ident() (i parsetree.Ident, err error) {
+	ierr := errors.New("in ident")
+	name, err := p.expectGetAny(token.IDENT, token.NIL)
+	if err != nil {
+		return i, errors.Join(ierr, err)
+	}
+	return parsetree.Ident{Name: *name}, nil
 }
 
 func (p *ParseTreeParser) StructLiteral() (sl parsetree.StructLiteral, err error) {
@@ -420,7 +441,7 @@ func (p *ParseTreeParser) StructLiteralFields() (slfs parsetree.SeparatedList[pa
 			// 0 or many fields
 			return slfs, nil
 		}
-		fieldName, err := p.expectGet(token.IDENT)
+		fieldName, err := p.Ident()
 		if err != nil {
 			return slfs, errors.Join(slfserr, err)
 		}
@@ -432,7 +453,7 @@ func (p *ParseTreeParser) StructLiteralFields() (slfs parsetree.SeparatedList[pa
 		if err != nil {
 			return slfs, errors.Join(slfserr, errors.New("expected expr"), err)
 		}
-		field := parsetree.StructLiteralField{FieldName: *fieldName, Colon: *colon, Value: value}
+		field := parsetree.StructLiteralField{FieldName: fieldName, Colon: *colon, Value: value}
 		if tok, err := p.peekNextToken(); err != nil {
 			return slfs, errors.Join(slfserr, err)
 		} else if tok.Type() == token.RBRACE {

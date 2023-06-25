@@ -1,9 +1,9 @@
 // possible exprs
 // literals
-let literal = 10;
+let someVar = 10;
 
 // from variable
-let copy = literal; // ident
+let copy = someVar; // ident
 
 // struct literal
 type node = struct{v string};

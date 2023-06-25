@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/bigyihsuan/structlang/token"
 
 	"github.com/bigyihsuan/structlang/trees/ast"
@@ -37,15 +39,112 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 				LastToken:  &lasttoken,
 			},
 		}
+	case parsetree.VarDef:
+		// TODO
+		lvalue := a.Lvalue(stmt.Lvalue)
+		rvalue := a.Expr(stmt.Rvalue)
+		firsttoken := stmt.LetKw
+		lasttoken := stmt.Sc
+		return ast.VarDef{
+			Lvalue: lvalue,
+			Rvalue: rvalue,
+			Tokens: ast.Tokens{
+				FirstToken: &firsttoken,
+				LastToken:  &lasttoken,
+			},
+		}
 	}
-
 	return
 }
 
+func (a AstParser) Lvalue(lv parsetree.Lvalue) (l ast.Lvalue) {
+	switch lv := lv.(type) {
+	case parsetree.Ident:
+		return a.Ident(lv)
+	case parsetree.FieldAccess:
+		lvalue := a.Lvalue(lv.Lvalue)
+		ident := a.Ident(lv.Ident)
+		firsttoken := lvalue.FirstTok()
+		lasttoken := ident.LastToken
+		return ast.FieldAccess{
+			Lvalue: lvalue,
+			Ident:  ident,
+			Tokens: ast.Tokens{
+				FirstToken: firsttoken,
+				LastToken:  lasttoken,
+			},
+		}
+	default:
+		fmt.Println("unknown", lv)
+	}
+	return
+}
+
+func (a AstParser) Ident(lv parsetree.Ident) ast.Ident {
+	firsttoken := lv.Name
+	lasttoken := lv.Name
+	return ast.Ident{
+		Name: lv.Name.Lexeme(),
+		Tokens: ast.Tokens{
+			FirstToken: &firsttoken,
+			LastToken:  &lasttoken,
+		},
+	}
+}
+
+func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
+	switch expr := expr.(type) {
+	case parsetree.Literal:
+		return ast.Literal{
+			Token: expr.Token,
+			Tokens: ast.Tokens{
+				FirstToken: &expr.Token,
+				LastToken:  &expr.Token,
+			},
+		}
+	case parsetree.StructLiteral:
+		return a.StructLiteral(expr)
+	case parsetree.Ident:
+		return a.Ident(expr)
+	}
+	return
+}
+
+func (a AstParser) StructLiteral(expr parsetree.StructLiteral) (sl ast.StructLiteral) {
+	typeName := a.Type(expr.TypeName)
+	fields := []ast.StructLiteralField{}
+	for _, f := range expr.Fields {
+		field := a.StructLiteralField(f.First)
+		fields = append(fields, field)
+	}
+	lastToken := expr.Rbrace
+	return ast.StructLiteral{
+		TypeName: typeName,
+		Fields:   fields,
+		Tokens: ast.Tokens{
+			FirstToken: typeName.FirstToken,
+			LastToken:  &lastToken,
+		},
+	}
+}
+
+func (a AstParser) StructLiteralField(field parsetree.StructLiteralField) (slf ast.StructLiteralField) {
+	fieldName := a.Ident(field.FieldName)
+	value := a.Expr(field.Value)
+	return ast.StructLiteralField{
+		FieldName: fieldName,
+		Value:     value,
+		Tokens: ast.Tokens{
+			FirstToken: fieldName.FirstToken,
+			LastToken:  value.LastTok(),
+		},
+	}
+}
+
 func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
-	typename := type_.TypeName.Lexeme()
+	typename := a.Ident(type_.TypeName)
 	typevars := a.TypeVars(type_.TypeVars)
-	firsttoken := type_.TypeName
+	firsttoken := type_.TypeName.Name
 	var lasttoken token.Token
 	if len(typevars.Types) == 0 {
 		lasttoken = firsttoken
@@ -104,10 +203,10 @@ func (a AstParser) StructFields(fields []parsetree.StructField) (f []ast.StructF
 }
 func (a AstParser) StructField(field parsetree.StructField) (f ast.StructField) {
 	for _, name := range field.Names {
-		f.Names = append(f.Names, name.First.Lexeme())
+		f.Names = append(f.Names, a.Ident(name.First))
 	}
 	f.Type = a.Type(field.Type)
-	f.FirstToken = &field.Names[0].First
+	f.FirstToken = f.Names[0].FirstToken
 	f.LastToken = f.Type.LastToken
 	return f
 }

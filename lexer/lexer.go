@@ -50,6 +50,10 @@ func (l *Lexer) Lex() token.Token {
 			break
 		}
 	}
+	if l.offset == len(l.src) {
+		return token.NewToken(token.EOF, "", offset, line, column)
+	}
+
 	// set starting spans
 	if offset == -1 {
 		offset = l.offset
