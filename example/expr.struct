@@ -1,0 +1,10 @@
+// possible exprs
+// literals
+let literal = 10;
+
+// from variable
+let copy = literal; // ident
+
+// struct literal
+type node = struct{v string};
+let structLiteral = node{v:"hello"}; // ident as well. use lookahead to look for `{`.

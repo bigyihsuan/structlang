@@ -13,9 +13,10 @@ import (
 )
 
 func main() {
-	// b, _ := os.ReadFile("tree.struct")
-	// src := string(b)
-	src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
+	// b, _ := os.ReadFile("example/tree.struct")
+	b, _ := os.ReadFile("example/expr.struct")
+	src := string(b)
+	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)
 	fmt.Println(src)
 
@@ -26,10 +27,12 @@ func main() {
 		tok = lex.Lex()
 	}
 
-	// for _, tok := range tokens {
-	// 	fmt.Println(tok.String())
-	// }
-	// fmt.Println()
+	tokens = lexer.ClearComments(tokens)
+
+	for _, tok := range tokens {
+		fmt.Println(tok.String())
+	}
+	fmt.Println()
 
 	p := parser.NewParser(tokens)
 	tree, errs := p.Parse()

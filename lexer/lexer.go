@@ -180,3 +180,12 @@ func (l *Lexer) addWhile(condition func(r rune) bool) bool {
 func isWhitespace(r rune) bool         { return unicode.IsSpace(r) }
 func isDigit(r rune) bool              { return unicode.IsDigit(r) }
 func isIdentOrKeywordChar(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' }
+
+func ClearComments(tokens []token.Token) (out []token.Token) {
+	for _, tok := range tokens {
+		if tok.Type() != token.COMMENT {
+			out = append(out, tok)
+		}
+	}
+	return out
+}

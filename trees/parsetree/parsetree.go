@@ -8,6 +8,47 @@ import (
 type Stmt interface{ stmtTag() }
 type Expr interface{ exprTag() }
 
+type VarDef struct {
+	LetKw  token.Token
+	Lvalue Lvalue
+	Eq     token.Token
+	Rvalue Expr
+	Sc     token.Token
+}
+
+func (vd VarDef) stmtTag() {}
+
+type Lvalue struct {
+	BaseName token.Token
+	*FieldAccess
+}
+
+type FieldAccess struct {
+	Arrow token.Token
+	Lvalue
+}
+
+type StructLiteral struct {
+	TypeName Type
+	Lbrace   token.Token
+	Fields   SeparatedList[StructLiteralField, token.Token]
+	Rbrace   token.Token
+}
+
+func (sl StructLiteral) exprTag() {}
+
+type StructLiteralField struct {
+	FieldName token.Token
+	Colon     token.Token
+	Value     Expr
+}
+
+type Literal struct {
+	token.Token
+}
+
+func (l Literal) exprTag() {}
+
 type TypeDef struct {
 	TypeKw    token.Token
 	TypeName  Type

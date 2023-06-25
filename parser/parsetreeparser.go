@@ -39,6 +39,9 @@ func (p ParseTreeParser) peekNextToken() (tok *token.Token, err error) {
 	tok = &p.tokens[p.idx]
 	return tok, nil
 }
+func (p *ParseTreeParser) putBackToken() {
+	p.idx--
+}
 
 func (p *ParseTreeParser) expectGet(tt token.TokenType) (*token.Token, error) {
 	tok, err := p.getNextToken()
@@ -61,6 +64,26 @@ func (p *ParseTreeParser) expectGetAny(tts ...token.TokenType) (*token.Token, er
 		}
 	}
 	return tok, fmt.Errorf("expected any token %s, got `%s` at `%v`", tts, tok.Type(), tok.Position())
+}
+
+func (p ParseTreeParser) nextTokenIs(tt token.TokenType) (bool, error) {
+	next, err := p.peekNextToken()
+	if err != nil {
+		return false, err
+	}
+	return next.Type() == tt, nil
+}
+func (p ParseTreeParser) nextTokenIsAny(tts ...token.TokenType) (bool, error) {
+	next, err := p.peekNextToken()
+	if err != nil {
+		return false, err
+	}
+	for _, tt := range tts {
+		if next.Type() == tt {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (p *ParseTreeParser) Parse() (stmts []parsetree.Stmt, errs error) {
@@ -86,10 +109,80 @@ func (p *ParseTreeParser) Stmt() (stmt parsetree.Stmt, errs error) {
 			return td, errors.Join(stmterr, errors.New("expected typedef with kw `type`"), err)
 		}
 		return td, nil
+	case token.LET:
+		vd, err := p.VarDef()
+		if err != nil {
+			return vd, errors.Join(stmterr, errors.New("expected vardef with kw `let`"), err)
+		}
+		return vd, nil
 	default:
 		return nil, errors.Join(stmterr, fmt.Errorf("unknown for Stmt: type=`%s` lexeme=`%s`", kw.Type(), kw.Lexeme()))
 	}
 }
+
+func (p *ParseTreeParser) VarDef() (vd parsetree.VarDef, errs error) {
+	vderr := errors.New("in vardef")
+	letkw, err := p.expectGet(token.LET)
+	if err != nil {
+		return vd, errors.Join(vderr, err)
+	}
+	lvalue, err := p.Lvalue()
+	if err != nil {
+		return vd, errors.Join(vderr, errors.New("expected lvalue"), err)
+	}
+	eq, err := p.expectGet(token.EQ)
+	if err != nil {
+		return vd, errors.Join(vderr, err)
+	}
+	rvalue, err := p.Expr()
+	if err != nil {
+		return vd, errors.Join(vderr, errors.New("expected rvalue"), err)
+	}
+	sc, err := p.expectGet(token.SEMICOLON)
+	if err != nil {
+		return vd, errors.Join(vderr, err)
+	}
+	return parsetree.VarDef{LetKw: *letkw, Lvalue: lvalue, Eq: *eq, Rvalue: rvalue, Sc: *sc}, nil
+}
+
+func (p *ParseTreeParser) Lvalue() (lv parsetree.Lvalue, err error) {
+	lverr := errors.New("in lvalue")
+	basename, err := p.expectGet(token.IDENT)
+	if err != nil {
+		return lv, errors.Join(lverr, err)
+	}
+
+	if res, err := p.nextTokenIs(token.ARROW); err != nil {
+		return lv, errors.Join(lverr, err)
+	} else if !res {
+		return parsetree.Lvalue{
+			BaseName:    *basename,
+			FieldAccess: nil,
+		}, err
+	}
+	fa, err := p.FieldAccess()
+	if err != nil {
+		return lv, errors.Join(lverr, err)
+	}
+	return parsetree.Lvalue{
+		BaseName:    *basename,
+		FieldAccess: &fa,
+	}, err
+}
+
+func (p *ParseTreeParser) FieldAccess() (fa parsetree.FieldAccess, err error) {
+	faerr := errors.New("in field access")
+	arrow, err := p.getNextToken()
+	if err != nil {
+		return fa, errors.Join(faerr, err)
+	}
+	lv, err := p.Lvalue()
+	if err != nil {
+		return fa, errors.Join(faerr, errors.New("expected lvalue for field access"), err)
+	}
+	return parsetree.FieldAccess{Arrow: *arrow, Lvalue: lv}, err
+}
+
 func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
 	tderr := errors.New("in typedef")
 	type_, err := p.expectGet(token.TYPE)
@@ -115,6 +208,7 @@ func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
 
 	return parsetree.TypeDef{TypeKw: *type_, TypeName: typename, Eq: *eq, StructDef: structDef, Sc: *sc}, nil
 }
+
 func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	tyerr := errors.New("in type")
 	typename, err := p.expectGetAny(token.IDENT, token.NIL)
@@ -127,6 +221,7 @@ func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	}
 	return parsetree.Type{TypeName: *typename, TypeVars: typevars}, nil
 }
+
 func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 	tvserr := errors.New("in typevars")
 	if peeked, err := p.peekNextToken(); err != nil {
@@ -146,9 +241,9 @@ func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 	if err != nil {
 		return tvs, errors.Join(tvserr, err)
 	}
-
 	return &parsetree.TypeVars{Lbracket: *lbracket, TypeVars: typevars, Rbracket: *rbracket}, nil
 }
+
 func (p *ParseTreeParser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.Type, token.Token], errs error) {
 	tvperr := errors.New("in typevar params")
 	for {
@@ -176,6 +271,7 @@ func (p *ParseTreeParser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.
 		tv = append(tv, util.Pair[parsetree.Type, *token.Token]{First: typename, Last: comma})
 	}
 }
+
 func (p *ParseTreeParser) StructDef() (st parsetree.StructDef, errs error) {
 	sderr := errors.New("in structdef")
 	structKw, err := p.expectGet(token.STRUCT)
@@ -198,7 +294,6 @@ func (p *ParseTreeParser) StructDef() (st parsetree.StructDef, errs error) {
 	if err != nil {
 		return st, errors.Join(sderr, err)
 	}
-
 	return parsetree.StructDef{StructKw: *structKw, TypeVars: typeVars, Lbrace: *lbrace, Fields: fields, Rbrace: *rbrace}, nil
 }
 
@@ -236,6 +331,7 @@ func (p *ParseTreeParser) StructFields() (f []parsetree.StructField, errs error)
 		// no trailing scs allowed
 	}
 }
+
 func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token, token.Token], errs error) {
 	nlerr := errors.New("in namelist")
 	for {
@@ -262,5 +358,94 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[token.Token,
 		}
 		names = append(names, util.Pair[token.Token, *token.Token]{First: *name, Last: comma})
 		// no trailing comma allowed
+	}
+}
+
+func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
+	exprerr := errors.New("in expr")
+	tok, err := p.peekNextToken()
+	if err != nil {
+		return expr, errors.Join(exprerr, err)
+	}
+	switch tt := tok.Type(); tt {
+	case token.NIL, token.BOOL_FALSE, token.BOOL_TRUE, token.INT, token.STRING:
+		tok, err := p.getNextToken()
+		if err != nil {
+			return expr, errors.Join(exprerr, err)
+		}
+		return parsetree.Literal{Token: *tok}, nil
+	case token.IDENT:
+		expr, err := p.IdentOrStructLiteral()
+		if err != nil {
+			return expr, errors.Join(exprerr, errors.New("expected ident or struct literal"), err)
+		}
+		return expr, nil
+	default:
+		return expr, errors.Join(exprerr, fmt.Errorf("unknown token for expr: type=`%s` lexeme=`%s`", tok.Type(), tok.Lexeme()))
+	}
+}
+
+func (p *ParseTreeParser) IdentOrStructLiteral() (expr parsetree.Expr, err error) {
+	// TODO
+	return
+}
+
+func (p *ParseTreeParser) StructLiteral() (sl parsetree.StructLiteral, err error) {
+	slerr := errors.New("in struct literal")
+	typename, err := p.Type()
+	if err != nil {
+		return sl, errors.Join(slerr, errors.New("expected type"), err)
+	}
+	lbrace, err := p.expectGet(token.LBRACE)
+	if err != nil {
+		return sl, errors.Join(slerr, err)
+	}
+	fields, err := p.StructLiteralFields()
+	if err != nil {
+		return sl, errors.Join(slerr, errors.New("expected struct literal fields"), err)
+	}
+	rbrace, err := p.expectGet(token.RBRACE)
+	if err != nil {
+		return sl, errors.Join(slerr, err)
+	}
+	return parsetree.StructLiteral{TypeName: typename, Lbrace: *lbrace, Fields: fields, Rbrace: *rbrace}, nil
+}
+
+func (p *ParseTreeParser) StructLiteralFields() (slfs parsetree.SeparatedList[parsetree.StructLiteralField, token.Token], err error) {
+	slfserr := errors.New("in struct literal fields")
+	for {
+		if tok, err := p.peekNextToken(); err != nil {
+			return slfs, errors.Join(slfserr, err)
+		} else if tok.Type() == token.RBRACE {
+			// 0 or many fields
+			return slfs, nil
+		}
+		fieldName, err := p.expectGet(token.IDENT)
+		if err != nil {
+			return slfs, errors.Join(slfserr, err)
+		}
+		colon, err := p.expectGet(token.COLON)
+		if err != nil {
+			return slfs, errors.Join(slfserr, err)
+		}
+		value, err := p.Expr()
+		if err != nil {
+			return slfs, errors.Join(slfserr, errors.New("expected expr"), err)
+		}
+		field := parsetree.StructLiteralField{FieldName: *fieldName, Colon: *colon, Value: value}
+		if tok, err := p.peekNextToken(); err != nil {
+			return slfs, errors.Join(slfserr, err)
+		} else if tok.Type() == token.RBRACE {
+			// 1 field
+			pair := util.Pair[parsetree.StructLiteralField, *token.Token]{First: field, Last: nil}
+			slfs = append(slfs, pair)
+			return slfs, nil
+		}
+		comma, err := p.expectGet(token.COMMA)
+		if err != nil {
+			return slfs, errors.Join(slfserr, err)
+		}
+		pair := util.Pair[parsetree.StructLiteralField, *token.Token]{First: field, Last: comma}
+		slfs = append(slfs, pair)
 	}
 }
