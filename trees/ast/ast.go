@@ -45,15 +45,15 @@ type Lvalue interface {
 }
 
 type FieldAccess struct {
-	Lvalue
-	Ident
-	Tokens
+	Lvalue Lvalue
+	Field  Ident
+	Tokens Tokens
 }
 
 func (fa FieldAccess) exprTag()               {}
 func (fa FieldAccess) lvalueTag()             {}
 func (fa FieldAccess) FirstTok() *token.Token { return fa.Lvalue.FirstTok() }
-func (fa FieldAccess) LastTok() *token.Token  { return fa.Ident.LastToken }
+func (fa FieldAccess) LastTok() *token.Token  { return fa.Field.LastToken }
 
 type Type struct {
 	Name Ident

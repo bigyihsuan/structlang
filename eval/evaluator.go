@@ -1,8 +1,12 @@
 package eval
 
 import (
+	"errors"
+	"fmt"
+	"strconv"
+
+	"github.com/bigyihsuan/structlang/token"
 	"github.com/bigyihsuan/structlang/trees/ast"
-	"github.com/kr/pretty"
 )
 
 type Evaluator struct {
@@ -18,13 +22,23 @@ func NewEvaluator(code []ast.Stmt) Evaluator {
 }
 
 func (e *Evaluator) Stmt(currEnv *Env) error {
+	var errs error
 	for _, stmt := range e.Code {
+		var err error = nil
 		switch stmt := stmt.(type) {
 		case ast.TypeDef:
-			return e.TypeDef(currEnv, stmt)
+			err = e.TypeDef(currEnv, stmt)
+		case ast.VarDef:
+			err = e.VarDef(currEnv, stmt)
+		default:
+			fmt.Printf("unknown stmt: %T\n", stmt)
 		}
+		if err != nil {
+			errs = errors.Join(errs, err)
+		}
+
 	}
-	return nil
+	return errs
 }
 
 func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
@@ -35,13 +49,8 @@ func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
 	return nil
 }
 
-func (e *Evaluator) Type(currEnv *Env, type_ ast.Type) error {
-
-	return nil
-}
-
-func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (Struct, error) {
-	var structType Struct
+func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (StructType, error) {
+	var structType StructType
 	structType.TypeParams = make(map[Identifier]TypeName)
 	structType.Fields = make(map[Identifier]TypeName)
 
@@ -57,7 +66,6 @@ func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (Struct, er
 			structType.Fields[name] = fieldType
 		}
 	}
-	pretty.Println(structType)
 
 	return structType, nil
 }
@@ -73,4 +81,115 @@ func (e *Evaluator) TypeName(currEnv *Env, typename ast.Type) (TypeName, error) 
 	type_.Name = name
 	type_.Vars = vars
 	return type_, nil
+}
+
+func (e *Evaluator) VarDef(currEnv *Env, varDef ast.VarDef) error {
+	lvalue, err := e.Lvalue(currEnv, varDef.Lvalue)
+	if err != nil {
+		return err
+	}
+	rvalue, err := e.Expr(currEnv, varDef.Rvalue)
+	if err != nil {
+		return err
+	}
+
+	currEnv.DefineVariable(lvalue, rvalue)
+	return nil
+}
+
+func (e *Evaluator) Lvalue(currEnv *Env, lvalue ast.Lvalue) (Identifier, error) {
+	switch lvalue := lvalue.(type) {
+	case ast.Ident:
+		ident := NewIdentifier(lvalue)
+		return ident, nil
+	case ast.FieldAccess:
+		base, err := e.Lvalue(currEnv, lvalue.Lvalue)
+		if err != nil {
+			return base, err
+		}
+		ident := base.NewAccess(lvalue.Field)
+		return ident, nil
+	default:
+		fmt.Printf("unknown lvalue: %T\n", lvalue)
+	}
+	return Identifier{}, fmt.Errorf("unkown lvalue: %v", lvalue)
+}
+
+func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (Value, error) {
+	switch expr := expr.(type) {
+	case ast.Literal:
+		return e.Literal(currEnv, expr)
+	case ast.Ident:
+		ident, err := e.Lvalue(currEnv, expr)
+		if err != nil {
+			return Value{}, err
+		}
+		v := currEnv.GetVariable(ident)
+		if v == nil {
+			return Value{}, fmt.Errorf("variable `%s` not defined", expr.Name)
+		}
+		return *v, nil
+	case ast.StructLiteral:
+		return e.StructLiteral(currEnv, expr)
+	case ast.FieldAccess:
+		return e.FieldAccess(currEnv, expr)
+	default:
+		fmt.Printf("unknown expr: %T\n", expr)
+	}
+
+	return Value{}, nil
+}
+
+func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (Value, error) {
+	switch expr.Token.Type() {
+	case token.INT:
+		v, err := strconv.Atoi(expr.Token.Lexeme())
+		return Value{v}, err
+	case token.FLOAT:
+		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
+		return Value{v}, err
+	case token.BOOL_TRUE:
+		v, err := strconv.ParseBool(expr.Token.Lexeme())
+		return Value{v}, err
+	case token.BOOL_FALSE:
+		v, err := strconv.ParseBool(expr.Token.Lexeme())
+		return Value{v}, err
+	case token.STRING:
+		return Value{expr.Token.Lexeme()}, nil
+	}
+	return Value{}, nil
+}
+
+func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (Value, error) {
+	sv := StructValue{Fields: make(map[Identifier]Value)}
+	for _, field := range expr.Fields {
+		name := NewIdentifier(field.FieldName)
+		val, err := e.Expr(currEnv, field.Value)
+		if err != nil {
+			return Value{}, nil
+		}
+		sv.Fields[name] = val
+	}
+	return Value{sv}, nil
+}
+
+func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (Value, error) {
+	var base Value
+	switch l := expr.Lvalue.(type) {
+	case ast.Ident:
+		b := currEnv.GetVariable(NewIdentifier(l))
+		if b == nil {
+			return Value{}, fmt.Errorf("variable `%s` not defined", l.Name)
+		}
+		base = *b
+	case ast.FieldAccess:
+		b, err := e.FieldAccess(currEnv, l)
+		if err != nil {
+			return Value{}, err
+		}
+		base = b
+	}
+	field := NewIdentifier(expr.Field)
+	// TODO: actually make sure that this is a StructValue and not something else
+	return base.V.(StructValue).Fields[field], nil
 }

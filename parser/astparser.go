@@ -40,7 +40,6 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 			},
 		}
 	case parsetree.VarDef:
-		// TODO
 		lvalue := a.Lvalue(stmt.Lvalue)
 		rvalue := a.Expr(stmt.Rvalue)
 		firsttoken := stmt.LetKw
@@ -63,19 +62,19 @@ func (a AstParser) Lvalue(lv parsetree.Lvalue) (l ast.Lvalue) {
 		return a.Ident(lv)
 	case parsetree.FieldAccess:
 		lvalue := a.Lvalue(lv.Lvalue)
-		ident := a.Ident(lv.Ident)
+		ident := a.Ident(lv.Field)
 		firsttoken := lvalue.FirstTok()
 		lasttoken := ident.LastToken
 		return ast.FieldAccess{
 			Lvalue: lvalue,
-			Ident:  ident,
+			Field:  ident,
 			Tokens: ast.Tokens{
 				FirstToken: firsttoken,
 				LastToken:  lasttoken,
 			},
 		}
 	default:
-		fmt.Println("unknown", lv)
+		fmt.Printf("unknown ast %T\n", lv)
 	}
 	return
 }
@@ -106,6 +105,10 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 		return a.StructLiteral(expr)
 	case parsetree.Ident:
 		return a.Ident(expr)
+	case parsetree.FieldAccess:
+		return a.FieldAccess(expr)
+	default:
+		fmt.Printf("unknown expr %T\n", expr)
 	}
 	return
 }
@@ -209,4 +212,23 @@ func (a AstParser) StructField(field parsetree.StructField) (f ast.StructField) 
 	f.FirstToken = f.Names[0].FirstToken
 	f.LastToken = f.Type.LastToken
 	return f
+}
+
+func (a AstParser) FieldAccess(expr parsetree.FieldAccess) (fa ast.FieldAccess) {
+	var lv ast.Lvalue
+	switch l := expr.Lvalue.(type) {
+	case parsetree.Ident:
+		lv = a.Ident(l)
+	case parsetree.FieldAccess:
+		lv = a.FieldAccess(l)
+	}
+	f := a.Ident(expr.Field)
+	return ast.FieldAccess{
+		Lvalue: lv,
+		Field:  f,
+		Tokens: ast.Tokens{
+			FirstToken: lv.FirstTok(),
+			LastToken:  f.LastTok(),
+		},
+	}
 }

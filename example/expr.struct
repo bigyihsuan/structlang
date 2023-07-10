@@ -8,3 +8,6 @@ let copy = someVar; // ident
 // struct literal
 type node = struct{v string};
 let structLiteral = node{v:"hello"}; // ident as well. use lookahead to look for `{`.
+let access = structLiteral->v;
+
+// type tree[T] = struct[T]{v T; l,r either[tree[T],nil] };

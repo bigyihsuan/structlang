@@ -24,9 +24,9 @@ type Lvalue interface {
 }
 
 type FieldAccess struct {
-	Lvalue
-	Arrow token.Token
-	Ident
+	Lvalue Lvalue
+	Arrow  token.Token
+	Field  Ident
 }
 
 func (fa FieldAccess) exprTag()   {}

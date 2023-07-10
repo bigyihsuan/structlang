@@ -1,0 +1,8 @@
+type point = struct{x,y int};
+type pair = struct{l,r point};
+
+let m = pair{
+    l: point{x:0,y:1},
+    r: point{x:2,y:3},
+};
+let mry = m->r->y;

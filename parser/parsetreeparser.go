@@ -152,28 +152,11 @@ func (p *ParseTreeParser) Lvalue() (lv parsetree.Lvalue, err error) {
 	if err != nil {
 		return lv, errors.Join(lverr, err)
 	}
-	isArrow, err := p.nextTokenIs(token.ARROW)
-	if err != nil {
+	if isArrow, err := p.nextTokenIs(token.ARROW); err != nil {
 		return lv, errors.Join(lverr, err)
 	} else if isArrow {
-		p.putBackToken()          // piut back ident
-		lvalue, err := p.Lvalue() // recurse
-		if err != nil {
-			return lv, errors.Join(lverr, errors.New("expected lvalue with `->`"), err)
-		}
-		arrow, err := p.expectGet(token.ARROW)
-		if err != nil {
-			return lv, errors.Join(lverr, err)
-		}
-		ident, err := p.expectGet(token.IDENT)
-		if err != nil {
-			return lv, errors.Join(lverr, errors.New("expected identifier with `->`"), err)
-		}
-		return parsetree.FieldAccess{
-			Lvalue: lvalue,
-			Arrow:  *arrow,
-			Ident:  parsetree.Ident{Name: *ident},
-		}, err
+		p.putBackToken() // put back ident
+		return p.FieldAccess()
 	} else {
 		// single ident
 		return parsetree.Ident{Name: *ident}, nil
@@ -372,7 +355,7 @@ func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
 		}
 		return parsetree.Literal{Token: *tok}, nil
 	case token.IDENT:
-		expr, err := p.IdentOrStructLiteral()
+		expr, err := p.IdentOrStructLiteralOrFieldAccess()
 		if err != nil {
 			return expr, errors.Join(exprerr, errors.New("expected ident or struct literal"), err)
 		}
@@ -382,8 +365,8 @@ func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
 	}
 }
 
-func (p *ParseTreeParser) IdentOrStructLiteral() (expr parsetree.Expr, err error) {
-	islerr := errors.New("in ident/struct literal")
+func (p *ParseTreeParser) IdentOrStructLiteralOrFieldAccess() (expr parsetree.Expr, err error) {
+	islerr := errors.New("in ident/struct literal/field access")
 	ident, err := p.expectGet(token.IDENT)
 	if err != nil {
 		return expr, errors.Join(islerr, err)
@@ -397,9 +380,18 @@ func (p *ParseTreeParser) IdentOrStructLiteral() (expr parsetree.Expr, err error
 			return expr, errors.Join(islerr, errors.New("expected struct literal with `{`"), err)
 		}
 		return sl, nil
-	} else {
-		return parsetree.Ident{Name: *ident}, nil
 	}
+	if hasFieldAccess, err := p.nextTokenIs(token.ARROW); err != nil {
+		return expr, errors.Join(islerr, err)
+	} else if hasFieldAccess {
+		p.putBackToken()
+		fa, err := p.FieldAccess()
+		if err != nil {
+			return expr, errors.Join(islerr, errors.New("expected field access with `->`"), err)
+		}
+		return fa, nil
+	}
+	return parsetree.Ident{Name: *ident}, nil
 }
 
 func (p *ParseTreeParser) Ident() (i parsetree.Ident, err error) {
@@ -469,4 +461,33 @@ func (p *ParseTreeParser) StructLiteralFields() (slfs parsetree.SeparatedList[pa
 		pair := util.Pair[parsetree.StructLiteralField, *token.Token]{First: field, Last: comma}
 		slfs = append(slfs, pair)
 	}
+}
+
+func (p *ParseTreeParser) FieldAccess() (fa parsetree.Lvalue, err error) {
+	faerr := errors.New("in field access")
+	fa, err = p.Ident()
+	if err != nil {
+		return fa, errors.Join(faerr, errors.New("expected lvalue with `->`"), err)
+	}
+	for {
+		if hasArrow, err := p.nextTokenIs(token.ARROW); err != nil {
+			return fa, errors.Join(faerr, err)
+		} else if !hasArrow {
+			break
+		}
+		arrow, err := p.expectGet(token.ARROW)
+		if err != nil {
+			return fa, errors.Join(faerr, err)
+		}
+		field, err := p.expectGet(token.IDENT)
+		if err != nil {
+			return fa, errors.Join(faerr, errors.New("expected identifier with `->`"), err)
+		}
+		fa = parsetree.FieldAccess{
+			Lvalue: fa,
+			Arrow:  *arrow,
+			Field:  parsetree.Ident{Name: *field},
+		}
+	}
+	return fa, err
 }

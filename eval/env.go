@@ -2,14 +2,14 @@ package eval
 
 type Env struct {
 	Parent    *Env
-	Types     map[Identifier]Struct
+	Types     map[Identifier]StructType
 	Variables map[Identifier]Value
 }
 
 func NewEnv() Env {
 	return Env{
 		Parent:    nil,
-		Types:     make(map[Identifier]Struct),
+		Types:     make(map[Identifier]StructType),
 		Variables: make(map[Identifier]Value),
 	}
 }
@@ -17,15 +17,15 @@ func NewEnv() Env {
 func (e Env) MakeChild() Env {
 	return Env{
 		Parent:    &e,
-		Types:     make(map[Identifier]Struct),
+		Types:     make(map[Identifier]StructType),
 		Variables: make(map[Identifier]Value),
 	}
 }
 
-func (e *Env) DefineType(typeName Identifier, structType Struct) {
+func (e *Env) DefineType(typeName Identifier, structType StructType) {
 	e.Types[typeName] = structType
 }
-func (e Env) GetType(typeName Identifier) *Struct {
+func (e Env) GetType(typeName Identifier) *StructType {
 	if t, ok := e.Types[typeName]; ok {
 		return &t
 	} else if e.Parent != nil {
