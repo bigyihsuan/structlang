@@ -115,20 +115,20 @@ func (e *Evaluator) Lvalue(currEnv *Env, lvalue ast.Lvalue) (Identifier, error) 
 	return Identifier{}, fmt.Errorf("unkown lvalue: %v", lvalue)
 }
 
-func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (Value, error) {
+func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 	switch expr := expr.(type) {
 	case ast.Literal:
 		return e.Literal(currEnv, expr)
 	case ast.Ident:
 		ident, err := e.Lvalue(currEnv, expr)
 		if err != nil {
-			return Value{}, err
+			return v, err
 		}
-		v := currEnv.GetVariable(ident)
-		if v == nil {
-			return Value{}, fmt.Errorf("variable `%s` not defined", expr.Name)
+		val := currEnv.GetVariable(ident)
+		if val == nil {
+			return v, fmt.Errorf("variable `%s` not defined", expr.Name)
 		}
-		return *v, nil
+		return *val, nil
 	case ast.StructLiteral:
 		return e.StructLiteral(currEnv, expr)
 	case ast.FieldAccess:
@@ -137,59 +137,60 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (Value, error) {
 		fmt.Printf("unknown expr: %T\n", expr)
 	}
 
-	return Value{}, nil
+	return v, nil
 }
 
-func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (Value, error) {
+func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error) {
 	switch expr.Token.Type() {
 	case token.INT:
 		v, err := strconv.Atoi(expr.Token.Lexeme())
-		return Value{v}, err
+		return NewValue(v), err
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
-		return Value{v}, err
+		return NewValue(v), err
 	case token.BOOL_TRUE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return Value{v}, err
+		return NewValue(v), err
 	case token.BOOL_FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return Value{v}, err
+		return NewValue(v), err
 	case token.STRING:
-		return Value{expr.Token.Lexeme()}, nil
+		return NewValue(expr.Token.Lexeme()), nil
+	default:
+		return v, fmt.Errorf("unknown literal %s", expr.Token.Type().String())
 	}
-	return Value{}, nil
 }
 
-func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (Value, error) {
+func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value, err error) {
 	sv := StructValue{Fields: make(map[Identifier]Value)}
 	for _, field := range expr.Fields {
 		name := NewIdentifier(field.FieldName)
 		val, err := e.Expr(currEnv, field.Value)
 		if err != nil {
-			return Value{}, nil
+			return v, nil
 		}
 		sv.Fields[name] = val
 	}
-	return Value{sv}, nil
+	return sv, nil
 }
 
-func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (Value, error) {
+func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (v Value, err error) {
 	var base Value
 	switch l := expr.Lvalue.(type) {
 	case ast.Ident:
 		b := currEnv.GetVariable(NewIdentifier(l))
 		if b == nil {
-			return Value{}, fmt.Errorf("variable `%s` not defined", l.Name)
+			return v, fmt.Errorf("variable `%s` not defined", l.Name)
 		}
 		base = *b
 	case ast.FieldAccess:
 		b, err := e.FieldAccess(currEnv, l)
 		if err != nil {
-			return Value{}, err
+			return v, err
 		}
 		base = b
 	}
 	field := NewIdentifier(expr.Field)
 	// TODO: actually make sure that this is a StructValue and not something else
-	return base.V.(StructValue).Fields[field], nil
+	return base.Get(field), nil
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
-	"github.com/kr/pretty"
 )
 
 const srcTemplate = `"""
@@ -17,7 +16,8 @@ const srcTemplate = `"""
 
 func main() {
 	// b, _ := os.ReadFile("example/tree.struct")
-	b, _ := os.ReadFile("example/expr.struct")
+	// b, _ := os.ReadFile("example/expr.struct")
+	b, _ := os.ReadFile("example/nested.struct")
 	src := string(b) + "\n"
 	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)
@@ -33,10 +33,10 @@ func main() {
 
 	tokens = lexer.ClearComments(tokens)
 
-	for _, tok := range tokens {
-		fmt.Println(tok.String())
-	}
-	fmt.Println()
+	// for _, tok := range tokens {
+	// 	fmt.Println(tok.String())
+	// }
+	// fmt.Println()
 
 	p := parser.NewParser(tokens)
 	tree, errs := p.Parse()
@@ -49,8 +49,8 @@ func main() {
 
 	astparser := parser.NewAstParser(tree)
 	asttree := astparser.Parse()
-	pretty.Println(asttree)
-	fmt.Println()
+	// pretty.Println(asttree)
+	// fmt.Println()
 
 	evaluator := eval.NewEvaluator(asttree)
 	err := evaluator.Stmt(&evaluator.BaseEnv)
