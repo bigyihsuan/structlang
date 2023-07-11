@@ -25,29 +25,30 @@ func _() {
 	_ = x[STRUCT-13]
 	_ = x[TYPE-14]
 	_ = x[LET-15]
-	_ = x[TRUE-16]
-	_ = x[FALSE-17]
-	_ = x[NIL-18]
-	_ = x[keywords_end-19]
-	_ = x[symbols_begin-20]
-	_ = x[LBRACKET-21]
-	_ = x[RBRACKET-22]
-	_ = x[LBRACE-23]
-	_ = x[RBRACE-24]
-	_ = x[LPAREN-25]
-	_ = x[RPAREN-26]
-	_ = x[PERIOD-27]
-	_ = x[COMMA-28]
-	_ = x[SEMICOLON-29]
-	_ = x[COLON-30]
-	_ = x[EQ-31]
-	_ = x[ARROW-32]
-	_ = x[symbols_end-33]
+	_ = x[SET-16]
+	_ = x[TRUE-17]
+	_ = x[FALSE-18]
+	_ = x[NIL-19]
+	_ = x[keywords_end-20]
+	_ = x[symbols_begin-21]
+	_ = x[LBRACKET-22]
+	_ = x[RBRACKET-23]
+	_ = x[LBRACE-24]
+	_ = x[RBRACE-25]
+	_ = x[LPAREN-26]
+	_ = x[RPAREN-27]
+	_ = x[PERIOD-28]
+	_ = x[COMMA-29]
+	_ = x[SEMICOLON-30]
+	_ = x[COLON-31]
+	_ = x[EQ-32]
+	_ = x[ARROW-33]
+	_ = x[symbols_end-34]
 }
 
-const _TokenType_name = "NOT_FOUNDILLEGALWHITESPACECOMMENTEOFliterals_beginIDENTINTFLOATBOOL_TRUEBOOL_FALSESTRINGliterals_endkeywords_beginSTRUCTTYPELETTRUEFALSENILkeywords_endsymbols_beginLBRACKETRBRACKETLBRACERBRACELPARENRPARENPERIODCOMMASEMICOLONCOLONEQARROWsymbols_end"
+const _TokenType_name = "NOT_FOUNDILLEGALWHITESPACECOMMENTEOFliterals_beginIDENTINTFLOATBOOL_TRUEBOOL_FALSESTRINGliterals_endkeywords_beginSTRUCTTYPELETSETTRUEFALSENILkeywords_endsymbols_beginLBRACKETRBRACKETLBRACERBRACELPARENRPARENPERIODCOMMASEMICOLONCOLONEQARROWsymbols_end"
 
-var _TokenType_index = [...]uint8{0, 9, 16, 26, 33, 36, 50, 55, 58, 63, 72, 82, 88, 100, 114, 120, 124, 127, 131, 136, 139, 151, 164, 172, 180, 186, 192, 198, 204, 210, 215, 224, 229, 231, 236, 247}
+var _TokenType_index = [...]uint8{0, 9, 16, 26, 33, 36, 50, 55, 58, 63, 72, 82, 88, 100, 114, 120, 124, 127, 130, 134, 139, 142, 154, 167, 175, 183, 189, 195, 201, 207, 213, 218, 227, 232, 234, 239, 250}
 
 func (i TokenType) String() string {
 	i -= -1

@@ -30,6 +30,8 @@ func (e *Evaluator) Stmt(currEnv *Env) error {
 			err = e.TypeDef(currEnv, stmt)
 		case ast.VarDef:
 			err = e.VarDef(currEnv, stmt)
+		case ast.VarSet:
+			err = e.VarSet(currEnv, stmt)
 		default:
 			fmt.Printf("unknown stmt: %T\n", stmt)
 		}
@@ -92,7 +94,19 @@ func (e *Evaluator) VarDef(currEnv *Env, varDef ast.VarDef) error {
 	if err != nil {
 		return err
 	}
+	currEnv.DefineVariable(lvalue, rvalue)
+	return nil
+}
 
+func (e *Evaluator) VarSet(currEnv *Env, varSet ast.VarSet) error {
+	lvalue, err := e.Lvalue(currEnv, varSet.Lvalue)
+	if err != nil {
+		return err
+	}
+	rvalue, err := e.Expr(currEnv, varSet.Rvalue)
+	if err != nil {
+		return err
+	}
 	currEnv.DefineVariable(lvalue, rvalue)
 	return nil
 }

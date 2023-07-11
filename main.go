@@ -17,7 +17,7 @@ const srcTemplate = `"""
 func main() {
 	// b, _ := os.ReadFile("example/tree.struct")
 	// b, _ := os.ReadFile("example/expr.struct")
-	b, _ := os.ReadFile("example/nested.struct")
+	b, _ := os.ReadFile("example/set.struct")
 	src := string(b) + "\n"
 	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)

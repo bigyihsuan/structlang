@@ -24,6 +24,7 @@ const (
 	STRUCT
 	TYPE
 	LET
+	SET
 	TRUE
 	FALSE
 	NIL
@@ -61,6 +62,7 @@ var tokens = [...]string{
 	STRUCT: "struct",
 	TYPE:   "type",
 	LET:    "let",
+	SET:    "set",
 	TRUE:   "true",
 	FALSE:  "false",
 	NIL:    "nil",

@@ -115,6 +115,12 @@ func (p *ParseTreeParser) Stmt() (stmt parsetree.Stmt, errs error) {
 			return vd, errors.Join(stmterr, errors.New("expected vardef with kw `let`"), err)
 		}
 		return vd, nil
+	case token.SET:
+		vs, err := p.VarSet()
+		if err != nil {
+			return vs, errors.Join(stmterr, errors.New("expected vardef with kw `let`"), err)
+		}
+		return vs, nil
 	default:
 		return nil, errors.Join(stmterr, fmt.Errorf("unknown for Stmt: type=`%s` lexeme=`%s`", kw.Type(), kw.Lexeme()))
 	}
@@ -143,6 +149,31 @@ func (p *ParseTreeParser) VarDef() (vd parsetree.VarDef, errs error) {
 		return vd, errors.Join(vderr, err)
 	}
 	return parsetree.VarDef{LetKw: *letkw, Lvalue: lvalue, Eq: *eq, Rvalue: rvalue, Sc: *sc}, nil
+}
+
+func (p *ParseTreeParser) VarSet() (vs parsetree.VarSet, errs error) {
+	vserr := errors.New("in varset")
+	setkw, err := p.expectGet(token.SET)
+	if err != nil {
+		return vs, errors.Join(vserr, err)
+	}
+	lvalue, err := p.Lvalue()
+	if err != nil {
+		return vs, errors.Join(vserr, errors.New("expected lvalue"), err)
+	}
+	eq, err := p.expectGet(token.EQ)
+	if err != nil {
+		return vs, errors.Join(vserr, err)
+	}
+	rvalue, err := p.Expr()
+	if err != nil {
+		return vs, errors.Join(vserr, errors.New("expected rvalue"), err)
+	}
+	sc, err := p.expectGet(token.SEMICOLON)
+	if err != nil {
+		return vs, errors.Join(vserr, err)
+	}
+	return parsetree.VarSet{SetKw: *setkw, Lvalue: lvalue, Eq: *eq, Rvalue: rvalue, Sc: *sc}, nil
 }
 
 func (p *ParseTreeParser) Lvalue() (lv parsetree.Lvalue, err error) {

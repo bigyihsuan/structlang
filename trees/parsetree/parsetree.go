@@ -18,6 +18,16 @@ type VarDef struct {
 
 func (vd VarDef) stmtTag() {}
 
+type VarSet struct {
+	SetKw  token.Token
+	Lvalue Lvalue
+	Eq     token.Token
+	Rvalue Expr
+	Sc     token.Token
+}
+
+func (vs VarSet) stmtTag() {}
+
 type Lvalue interface {
 	Expr
 	lvalueTag()

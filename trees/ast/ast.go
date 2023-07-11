@@ -39,6 +39,16 @@ func (vd VarDef) stmtTag()               {}
 func (vd VarDef) FirstTok() *token.Token { return vd.FirstToken }
 func (vd VarDef) LastTok() *token.Token  { return vd.LastToken }
 
+type VarSet struct {
+	Lvalue Lvalue
+	Rvalue Expr
+	Tokens
+}
+
+func (vs VarSet) stmtTag()               {}
+func (vs VarSet) FirstTok() *token.Token { return vs.FirstToken }
+func (vs VarSet) LastTok() *token.Token  { return vs.LastToken }
+
 type Lvalue interface {
 	Expr
 	lvalueTag()

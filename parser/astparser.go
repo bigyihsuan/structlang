@@ -52,7 +52,21 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 				LastToken:  &lasttoken,
 			},
 		}
+	case parsetree.VarSet:
+		lvalue := a.Lvalue(stmt.Lvalue)
+		rvalue := a.Expr(stmt.Rvalue)
+		firsttoken := stmt.SetKw
+		lasttoken := stmt.Sc
+		return ast.VarSet{
+			Lvalue: lvalue,
+			Rvalue: rvalue,
+			Tokens: ast.Tokens{
+				FirstToken: &firsttoken,
+				LastToken:  &lasttoken,
+			},
+		}
 	}
+
 	return
 }
 
