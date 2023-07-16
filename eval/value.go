@@ -1,5 +1,7 @@
 package eval
 
+import "fmt"
+
 type Value interface {
 	Get(field string) Value
 }
@@ -32,69 +34,67 @@ func (sv StructValue) Get(field string) Value {
 	return sv.Fields[field]
 }
 
-type Primitive[T any] struct {
-	v T
+type Primitive struct {
+	v any
 	StructValue
 }
 
-var zero = func() (p Primitive[int]) {
+func NewPrimitive(v any) Primitive {
 	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("int")
-	sv.Fields["len"] = zero
-	p.StructValue = sv
-	p.v = 0
-	return
-}()
-
-func NewInt(v int) (p Primitive[int]) {
-	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("int")
-	sv.Fields["len"] = zero
-	p.StructValue = sv
-	p.v = v
-	return
-}
-func NewFloat(v float64) (p Primitive[float64]) {
-	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("float")
-	sv.Fields["len"] = zero
-	p.StructValue = sv
-	p.v = v
-	return
-}
-func NewBool(v bool) (p Primitive[bool]) {
-	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("bool")
-	sv.Fields["len"] = zero
-	p.StructValue = sv
-	p.v = v
-	return
-}
-func NewString(v string) (p Primitive[string]) {
-	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("string")
-	sv.Fields["len"] = NewInt(len([]rune(v)))
-	p.StructValue = sv
-	p.v = v
-	return
+	return Primitive{v: v, StructValue: sv}
 }
 
-var nilValue = func() (p Primitive[*bool]) {
+var nilValue = func() (p Primitive) {
 	sv := StructValue{Fields: make(map[string]Value)}
-	sv.Fields["name"] = NewString("nil")
-	sv.Fields["len"] = zero
-	p.StructValue = sv
+	sv.Fields["name"] = NewPrimitive("nil")
+	sv.Fields["len"] = NewPrimitive(0)
 	p.v = nil
 	return
 }()
 
-func NewNil() (p Primitive[*bool]) {
+func NewNil() (p Primitive) {
 	return nilValue
 }
 
-func (p Primitive[T]) Get(field string) Value {
+func (p Primitive) String() string {
+	return fmt.Sprintf("%v", p.v)
+}
+
+func (p Primitive) Get(field string) Value {
 	if field == "v" {
 		return p
+	}
+	switch v := p.v.(type) {
+	case int:
+		if field == "name" {
+			return NewPrimitive("int")
+		} else if field == "len" {
+			return NewPrimitive(0)
+		}
+	case float64:
+		if field == "name" {
+			return NewPrimitive("float")
+		} else if field == "len" {
+			return NewPrimitive(0)
+		}
+	case bool:
+		if field == "name" {
+			return NewPrimitive("bool")
+		} else if field == "len" {
+			return NewPrimitive(0)
+		}
+	case string:
+		if field == "name" {
+			return NewPrimitive("string")
+		} else if field == "len" {
+			return NewPrimitive(len(v))
+		}
+	case nil:
+		if field == "name" {
+			return NewPrimitive("nil")
+		} else if field == "len" {
+			return NewPrimitive(0)
+		}
 	}
 	return p.StructValue.Get(field)
 }

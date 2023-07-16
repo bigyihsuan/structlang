@@ -43,6 +43,7 @@ func main() {
 	} else if opts.Code != "" {
 		src = string(opts.Code)
 	}
+	src += "\n"
 
 	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)
