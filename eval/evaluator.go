@@ -67,7 +67,7 @@ func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (StructType
 
 func (e *Evaluator) TypeName(currEnv *Env, typename ast.Type) (TypeName, error) {
 	var type_ TypeName
-	name := NewIdentifier(typename.Name)
+	name := typename.Name.Name
 	vars := []TypeName{}
 	for _, typeArg := range typename.Vars.Types {
 		arg, _ := e.TypeName(currEnv, typeArg)
@@ -87,7 +87,7 @@ func (e *Evaluator) VarDef(currEnv *Env, varDef ast.VarDef) error {
 	if err != nil {
 		return err
 	}
-	currEnv.DefineVariable(lvalue, rvalue)
+	currEnv.DefineVariable(lvalue.Name, rvalue)
 	return nil
 }
 
@@ -100,7 +100,7 @@ func (e *Evaluator) VarSet(currEnv *Env, varSet ast.VarSet) error {
 	if err != nil {
 		return err
 	}
-	currEnv.DefineVariable(lvalue, rvalue)
+	currEnv.DefineVariable(lvalue.Name, rvalue)
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		if err != nil {
 			return v, err
 		}
-		val := currEnv.GetVariable(ident)
+		val := currEnv.GetVariable(ident.Name)
 		if val == nil {
 			return v, fmt.Errorf("variable `%s` not defined", expr.Name)
 		}
@@ -155,10 +155,10 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
 		return NewPrimitive(v), err
-	case token.BOOL_TRUE:
+	case token.BOOL_TRUE, token.TRUE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
 		return NewPrimitive(v), err
-	case token.BOOL_FALSE:
+	case token.BOOL_FALSE, token.FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
 		return NewPrimitive(v), err
 	case token.STRING:
@@ -173,9 +173,10 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value, err error) {
 	// basic duck typing
 	// check if all names+types in the struct literal match the ones in the type definition
-	st := currEnv.GetType(NewIdentifier(expr.TypeName.Name))
+	typename := expr.TypeName.Name.Name
+	st := currEnv.GetType(typename)
 	if st == nil {
-		return v, fmt.Errorf("type not found: %s", expr.TypeName.Name.Name)
+		return v, fmt.Errorf("type not found: %s", typename)
 	}
 	structTemplate := *st
 
@@ -186,11 +187,15 @@ func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value
 		if err != nil {
 			return v, nil
 		}
+		expFieldType, ok := structTemplate.Fields[name]
+		if !ok {
+			return v, fmt.Errorf("field `%s` not found in type `%s`", name, typename)
+		} else if valType := value.TypeName().Name; valType != expFieldType.Name {
+			return v, fmt.Errorf("unexpected type for field `%s`: got `%s`, want `%s`", name, valType, expFieldType.Name)
+		}
 		fields[name] = value
 	}
-
 	sv := NewStructValueFromType(structTemplate, fields)
-
 	return sv, nil
 }
 
@@ -198,7 +203,7 @@ func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (v Value, er
 	var base Value
 	switch l := expr.Lvalue.(type) {
 	case ast.Ident:
-		b := currEnv.GetVariable(NewIdentifier(l))
+		b := currEnv.GetVariable(l.Name)
 		if b == nil {
 			return v, fmt.Errorf("variable `%s` not defined", l.Name)
 		}

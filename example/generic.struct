@@ -1,0 +1,6 @@
+type container[T] = struct[T]{ v T };
+
+let strinst = container[string]{v: "hello"};
+let intinst = container[int]{v: 1234};
+let floatinst = container[float]{v: 56.789};
+let boolinst = container[bool]{v: false};

@@ -4,6 +4,7 @@ import "fmt"
 
 type Value interface {
 	Get(field string) Value
+	TypeName() TypeName
 }
 
 type StructValue struct {
@@ -20,11 +21,11 @@ func NewStructValue(fields map[string]Value) (sv StructValue) {
 }
 func NewStructValueFromType(st StructType, fields map[string]Value) (sv StructValue) {
 	sv.Fields = make(map[string]Value)
-	for name, _ := range st.Fields {
+	for name := range st.Fields {
 		var v Value
 		sv.Fields[name] = v
 	}
-	for name, _ := range sv.Fields {
+	for name := range sv.Fields {
 		sv.Fields[name] = fields[name]
 	}
 	return
@@ -32,6 +33,10 @@ func NewStructValueFromType(st StructType, fields map[string]Value) (sv StructVa
 
 func (sv StructValue) Get(field string) Value {
 	return sv.Fields[field]
+}
+func (sv StructValue) TypeName() TypeName {
+	// TODO
+	return TypeName{Name: "struct"}
 }
 
 type Primitive struct {
@@ -97,4 +102,20 @@ func (p Primitive) Get(field string) Value {
 		}
 	}
 	return p.StructValue.Get(field)
+}
+
+func (p Primitive) TypeName() TypeName {
+	switch p.v.(type) {
+	case int:
+		return TypeName{Name: "int", Vars: []TypeName{}}
+	case float64:
+		return TypeName{Name: "float", Vars: []TypeName{}}
+	case bool:
+		return TypeName{Name: "bool", Vars: []TypeName{}}
+	case string:
+		return TypeName{Name: "string", Vars: []TypeName{}}
+	case nil:
+		return TypeName{Name: "nil", Vars: []TypeName{}}
+	}
+	return nilValue.TypeName()
 }

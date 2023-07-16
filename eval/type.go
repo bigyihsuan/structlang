@@ -6,12 +6,12 @@ import (
 )
 
 type TypeName struct {
-	Name Identifier
+	Name string
 	Vars []TypeName
 }
 
 func (tn TypeName) String() string {
-	name := tn.Name.String()
+	name := tn.Name
 	vars := []string{}
 	for _, v := range tn.Vars {
 		vars = append(vars, v.String())

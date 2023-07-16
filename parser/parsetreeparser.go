@@ -379,7 +379,7 @@ func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
 		return expr, errors.Join(exprerr, err)
 	}
 	switch tt := tok.Type(); tt {
-	case token.NIL, token.BOOL_FALSE, token.BOOL_TRUE, token.INT, token.STRING:
+	case token.NIL, token.BOOL_FALSE, token.BOOL_TRUE, token.FALSE, token.TRUE, token.INT, token.FLOAT, token.STRING:
 		tok, err := p.getNextToken()
 		if err != nil {
 			return expr, errors.Join(exprerr, err)

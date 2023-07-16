@@ -45,7 +45,6 @@ func main() {
 	}
 	src += "\n"
 
-	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)
 	fmt.Printf(srcTemplate, src)
 	fmt.Println()
@@ -87,11 +86,12 @@ func main() {
 
 	fmt.Println("types:\n=======")
 	for id, ty := range evaluator.BaseEnv.Types {
-		fmt.Printf("%s = %s\n", id.String(), ty.String())
+		fmt.Printf("%s = %s\n", id, ty.String())
 	}
 	fmt.Println()
 	fmt.Println("vars:\n=======")
 	for id, val := range evaluator.BaseEnv.Variables {
-		fmt.Printf("%s = %v\n", id.String(), val)
+		fmt.Printf("%s = %v\n", id, val)
+		fmt.Println(val.TypeName())
 	}
 }
