@@ -100,8 +100,7 @@ func (e *Evaluator) VarSet(currEnv *Env, varSet ast.VarSet) error {
 	if err != nil {
 		return err
 	}
-	currEnv.DefineVariable(lvalue.Name, rvalue)
-	return nil
+	return currEnv.SetVariable(lvalue.Name, rvalue)
 }
 
 func (e *Evaluator) Lvalue(currEnv *Env, lvalue ast.Lvalue) (Identifier, error) {

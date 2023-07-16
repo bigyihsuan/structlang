@@ -1,5 +1,7 @@
 package eval
 
+import "fmt"
+
 type Env struct {
 	Parent    *Env
 	Types     map[string]StructType
@@ -37,6 +39,15 @@ func (e Env) GetType(typeName string) *StructType {
 
 func (e *Env) DefineVariable(name string, value Value) {
 	e.Variables[name] = value
+}
+func (e *Env) SetVariable(name string, value Value) error {
+	if variable, ok := e.Variables[name]; !ok {
+		return fmt.Errorf("variable not defined: `%s`", name)
+	} else if variable.TypeName().Name != value.TypeName().Name {
+		return fmt.Errorf("mismatched types: want to set `%s`, got `%s`", variable.TypeName().Name, value.TypeName().Name)
+	}
+	e.Variables[name] = value
+	return nil
 }
 func (e Env) GetVariable(name string) *Value {
 	if t, ok := e.Variables[name]; ok {
