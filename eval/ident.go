@@ -14,15 +14,8 @@ type Identifier struct {
 func NewIdentifier(name ast.Ident) Identifier {
 	return Identifier{Name: name.Name, Field: nil}
 }
-
-func NewIdentifierAccessing(baseName ast.Ident, nextNames ...ast.Ident) Identifier {
-	base := NewIdentifier(baseName)
-	current := base
-	for _, name := range nextNames {
-		next := current.NewAccess(name)
-		current = next
-	}
-	return base
+func NewIdentifierFromString(name string) Identifier {
+	return Identifier{Name: name, Field: nil}
 }
 
 func (i *Identifier) NewAccess(next ast.Ident) Identifier {

@@ -24,27 +24,17 @@ func (tn TypeName) String() string {
 }
 
 type StructType struct {
-	TypeParams map[Identifier]TypeName
-	Fields     map[Identifier]TypeName
+	Fields map[string]TypeName
 }
 
 func (s StructType) String() string {
-	tps := []string{}
-	for _, tn := range s.TypeParams {
-		tps = append(tps, tn.String())
-	}
-	typeParams := fmt.Sprintf("[%s]", strings.Join(tps, ", "))
-	if len(s.TypeParams) == 0 {
-		typeParams = ""
-	}
-
 	fs := []string{}
 	for id, tn := range s.Fields {
-		fs = append(fs, fmt.Sprintf("%s %s", id.String(), tn.String()))
+		fs = append(fs, fmt.Sprintf("%s %s", id, tn.String()))
 	}
 	fields := strings.Join(fs, "; ")
 	if len(s.Fields) == 0 {
 		fields = ""
 	}
-	return fmt.Sprintf("struct%s{%s}", typeParams, fields)
+	return fmt.Sprintf("struct{%s}", fields)
 }

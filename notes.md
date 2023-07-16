@@ -7,7 +7,7 @@
 
 ## types/structs
 
-### builtin types
+### builtin primitive types
 
 everything is a struct. everything has fields for whatever reason.
 
@@ -17,6 +17,12 @@ everything is a struct. everything has fields for whatever reason.
 - `string` (chars are 1-length strings)
 - `nil` (only value of `nil` is `nil`)
 
+included fields:
+
+- `v`: itself
+- `name`: the name of the type, as a string
+- `len`: the "length" of the type. 0 for int, float, bool, nil.
+
 ### struct
 
 - `struct`
@@ -24,7 +30,7 @@ everything is a struct. everything has fields for whatever reason.
 ### generics
 
 - `struct[T]` (struct with type parameter)
-- `either[T,U]`
+- `either[T,U]` (builtin)
 
 structs contain a list of fields
 

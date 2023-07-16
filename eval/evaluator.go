@@ -53,19 +53,12 @@ func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
 
 func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (StructType, error) {
 	var structType StructType
-	structType.TypeParams = make(map[Identifier]TypeName)
-	structType.Fields = make(map[Identifier]TypeName)
-
-	for _, typeVar := range structDef.Vars.Types {
-		tv, _ := e.TypeName(currEnv, typeVar)
-		structType.TypeParams[tv.Name] = tv
-	}
+	structType.Fields = make(map[string]TypeName)
 
 	for _, structField := range structDef.Fields {
 		fieldType, _ := e.TypeName(currEnv, structField.Type)
 		for _, fieldName := range structField.Names {
-			name := NewIdentifier(fieldName)
-			structType.Fields[name] = fieldType
+			structType.Fields[fieldName.Name] = fieldType
 		}
 	}
 
@@ -158,33 +151,46 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	switch expr.Token.Type() {
 	case token.INT:
 		v, err := strconv.Atoi(expr.Token.Lexeme())
-		return NewValue(v), err
+		return NewInt(v), err
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
-		return NewValue(v), err
+		return NewFloat(v), err
 	case token.BOOL_TRUE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewValue(v), err
+		return NewBool(v), err
 	case token.BOOL_FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewValue(v), err
+		return NewBool(v), err
 	case token.STRING:
-		return NewValue(expr.Token.Lexeme()), nil
+		return NewString(expr.Token.Lexeme()), nil
+	case token.NIL:
+		return NewNil(), nil
 	default:
 		return v, fmt.Errorf("unknown literal %s", expr.Token.Type().String())
 	}
 }
 
 func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value, err error) {
-	sv := StructValue{Fields: make(map[Identifier]Value)}
+	// basic duck typing
+	// check if all names+types in the struct literal match the ones in the type definition
+	st := currEnv.GetType(NewIdentifier(expr.TypeName.Name))
+	if st == nil {
+		return v, fmt.Errorf("type not found: %s", expr.TypeName.Name.Name)
+	}
+	structTemplate := *st
+
+	fields := make(map[string]Value)
 	for _, field := range expr.Fields {
-		name := NewIdentifier(field.FieldName)
-		val, err := e.Expr(currEnv, field.Value)
+		name := field.FieldName.Name
+		value, err := e.Expr(currEnv, field.Value)
 		if err != nil {
 			return v, nil
 		}
-		sv.Fields[name] = val
+		fields[name] = value
 	}
+
+	sv := NewStructValueFromType(structTemplate, fields)
+
 	return sv, nil
 }
 
@@ -204,7 +210,5 @@ func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (v Value, er
 		}
 		base = b
 	}
-	field := NewIdentifier(expr.Field)
-	// TODO: actually make sure that this is a StructValue and not something else
-	return base.Get(field), nil
+	return base.Get(expr.Field.Name), nil
 }

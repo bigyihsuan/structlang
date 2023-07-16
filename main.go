@@ -8,6 +8,7 @@ import (
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
+	"github.com/jessevdk/go-flags"
 )
 
 const srcTemplate = `"""
@@ -15,10 +16,34 @@ const srcTemplate = `"""
 `
 
 func main() {
-	// b, _ := os.ReadFile("example/tree.struct")
-	// b, _ := os.ReadFile("example/expr.struct")
-	b, _ := os.ReadFile("example/set.struct")
-	src := string(b) + "\n"
+	var opts struct {
+		File  flags.Filename `short:"f" long:"file" value-name:"FILE" description:"Input code file."`
+		Code  flags.Filename `short:"c" long:"code" value-name:"CODE" description:"Argument-provided code."`
+		Debug bool           `short:"d" long:"debug" description:"Output debugging information."`
+	}
+	_, err := flags.Parse(&opts)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	if opts.File != "" && opts.Code != "" {
+		fmt.Fprintln(os.Stderr, "-f/--file and -c/--code flags are mutually exclusive")
+		os.Exit(1)
+	}
+
+	var src string
+
+	if opts.File != "" {
+		bytes, err := os.ReadFile(string(opts.File))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		src = string(bytes)
+	} else if opts.Code != "" {
+		src = string(opts.Code)
+	}
+
 	// src := `type Tree[T] = struct[T]{v T; l,r Either[Tree[T],nil] };`
 	lex, _ := lexer.NewLexer(src)
 	fmt.Printf(srcTemplate, src)
@@ -53,16 +78,18 @@ func main() {
 	// fmt.Println()
 
 	evaluator := eval.NewEvaluator(asttree)
-	err := evaluator.Stmt(&evaluator.BaseEnv)
+	err = evaluator.Stmt(&evaluator.BaseEnv)
 	if err != nil {
 		fmt.Println(err)
 	}
 	// pretty.Println(evaluator.BaseEnv)
 
+	fmt.Println("types:\n=======")
 	for id, ty := range evaluator.BaseEnv.Types {
 		fmt.Printf("%s = %s\n", id.String(), ty.String())
 	}
 	fmt.Println()
+	fmt.Println("vars:\n=======")
 	for id, val := range evaluator.BaseEnv.Variables {
 		fmt.Printf("%s = %v\n", id.String(), val)
 	}
