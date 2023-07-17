@@ -1,6 +1,9 @@
 package eval
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Value interface {
 	Get(field string) Value
@@ -8,8 +11,9 @@ type Value interface {
 }
 
 type StructValue struct {
-	// TypeParams map[Identifier]StructType
-	Fields map[string]Value
+	Name       string
+	TypeParams map[string]TypeName
+	Fields     map[string]Value
 }
 
 func NewStructValue(fields map[string]Value) (sv StructValue) {
@@ -19,7 +23,9 @@ func NewStructValue(fields map[string]Value) (sv StructValue) {
 	}
 	return
 }
-func NewStructValueFromType(st StructType, fields map[string]Value) (sv StructValue) {
+func NewStructValueFromType(st StructType, typeParams map[string]TypeName, fields map[string]Value, typeName string) (sv StructValue) {
+	sv.TypeParams = typeParams
+	sv.Name = typeName
 	sv.Fields = make(map[string]Value)
 	for name := range st.Fields {
 		var v Value
@@ -35,8 +41,11 @@ func (sv StructValue) Get(field string) Value {
 	return sv.Fields[field]
 }
 func (sv StructValue) TypeName() TypeName {
-	// TODO
-	return TypeName{Name: "struct"}
+	fields := []string{}
+	for name, field := range sv.Fields {
+		fields = append(fields, fmt.Sprintf("%s %s", name, field.TypeName().Name))
+	}
+	return TypeName{Name: fmt.Sprintf("%s{%s}", sv.Name, strings.Join(fields, "; "))}
 }
 
 type Primitive struct {

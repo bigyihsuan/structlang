@@ -51,25 +51,35 @@ func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
 	return nil
 }
 
-func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (StructType, error) {
-	var structType StructType
-	structType.Fields = make(map[string]TypeName)
+func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (st StructType, err error) {
+	st.Fields = make(map[string]TypeName)
+	st.Vars = make([]TypeName, len(structDef.Vars))
 
 	for _, structField := range structDef.Fields {
-		fieldType, _ := e.TypeName(currEnv, structField.Type)
+		fieldType, err := e.TypeName(currEnv, structField.Type)
+		if err != nil {
+			return st, err
+		}
 		for _, fieldName := range structField.Names {
-			structType.Fields[fieldName.Name] = fieldType
+			st.Fields[fieldName.Name] = fieldType
 		}
 	}
+	for i, typeVar := range structDef.Vars {
+		tn, err := e.TypeName(currEnv, typeVar)
+		if err != nil {
+			return st, err
+		}
+		st.Vars[i] = tn
+	}
 
-	return structType, nil
+	return st, nil
 }
 
 func (e *Evaluator) TypeName(currEnv *Env, typename ast.Type) (TypeName, error) {
 	var type_ TypeName
 	name := typename.Name.Name
 	vars := []TypeName{}
-	for _, typeArg := range typename.Vars.Types {
+	for _, typeArg := range typename.Vars {
 		arg, _ := e.TypeName(currEnv, typeArg)
 		vars = append(vars, arg)
 	}
@@ -169,6 +179,17 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	}
 }
 
+func (e *Evaluator) TypeVars(currEnv *Env, types []ast.Type) (tv []TypeName, err error) {
+	for _, t := range types {
+		typeName, err := e.TypeName(currEnv, t)
+		if err != nil {
+			return tv, err
+		}
+		tv = append(tv, typeName)
+	}
+	return tv, nil
+}
+
 func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value, err error) {
 	// basic duck typing
 	// check if all names+types in the struct literal match the ones in the type definition
@@ -177,14 +198,34 @@ func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value
 	if st == nil {
 		return v, fmt.Errorf("type not found: %s", typename)
 	}
-	structTemplate := *st
+	structTemplate := (*st).Copy()
+
+	typeVars, err := e.TypeVars(currEnv, expr.TypeName.Vars)
+	if err != nil {
+		return v, err
+	}
+	if len(typeVars) != len(structTemplate.Vars) {
+		return v, fmt.Errorf("not enough type parameters: want %d, got %d", len(structTemplate.Vars), len(typeVars))
+	}
+
+	// overwrite template type variables with concrete types
+	typeParams := make(map[string]TypeName)
+	for idx, concreteType := range typeVars {
+		typeVar := structTemplate.Vars[idx]
+		for name, fieldType := range structTemplate.Fields {
+			if fieldType.Name == typeVar.Name {
+				structTemplate.Fields[name] = concreteType
+				typeParams[fieldType.Name] = concreteType
+			}
+		}
+	}
 
 	fields := make(map[string]Value)
 	for _, field := range expr.Fields {
-		name := field.FieldName.Name
+		name := field.Name.Name
 		value, err := e.Expr(currEnv, field.Value)
 		if err != nil {
-			return v, nil
+			return v, err
 		}
 		expFieldType, ok := structTemplate.Fields[name]
 		if !ok {
@@ -194,7 +235,8 @@ func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value
 		}
 		fields[name] = value
 	}
-	sv := NewStructValueFromType(structTemplate, fields)
+	sv := NewStructValueFromType(structTemplate, typeParams, fields, typename)
+
 	return sv, nil
 }
 

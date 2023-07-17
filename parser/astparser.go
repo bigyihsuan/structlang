@@ -129,11 +129,13 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 
 func (a AstParser) StructLiteral(expr parsetree.StructLiteral) (sl ast.StructLiteral) {
 	typeName := a.Type(expr.TypeName)
+
 	fields := []ast.StructLiteralField{}
 	for _, f := range expr.Fields {
 		field := a.StructLiteralField(f.First)
 		fields = append(fields, field)
 	}
+
 	lastToken := expr.Rbrace
 	return ast.StructLiteral{
 		TypeName: typeName,
@@ -149,8 +151,8 @@ func (a AstParser) StructLiteralField(field parsetree.StructLiteralField) (slf a
 	fieldName := a.Ident(field.FieldName)
 	value := a.Expr(field.Value)
 	return ast.StructLiteralField{
-		FieldName: fieldName,
-		Value:     value,
+		Name:  fieldName,
+		Value: value,
 		Tokens: ast.Tokens{
 			FirstToken: fieldName.FirstToken,
 			LastToken:  value.LastTok(),
@@ -163,7 +165,7 @@ func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 	typevars := a.TypeVars(type_.TypeVars)
 	firsttoken := type_.TypeName.Name
 	var lasttoken token.Token
-	if len(typevars.Types) == 0 {
+	if len(typevars) == 0 {
 		lasttoken = firsttoken
 	} else {
 		lasttoken = type_.TypeVars.Rbracket
@@ -178,24 +180,20 @@ func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 	}
 }
 
-func (a AstParser) TypeVars(typeVars *parsetree.TypeVars) (tv ast.TypeVars) {
+func (a AstParser) TypeVars(typeVars *parsetree.TypeVars) (tv []ast.Type) {
 	if typeVars == nil {
-		tv.FirstToken = nil
-		tv.LastToken = nil
 		return
 	}
 	for _, pair := range typeVars.TypeVars {
 		typename := pair.First
 		type_ := a.Type(typename)
-		tv.Types = append(tv.Types, type_)
+		tv = append(tv, type_)
 	}
-	tv.FirstToken = &typeVars.Lbracket
-	tv.LastToken = &typeVars.Rbracket
 	return tv
 }
 
 func (a AstParser) StructDef(structdef parsetree.StructDef) (sd ast.StructDef) {
-	var tv ast.TypeVars
+	var tv []ast.Type
 	if structdef.TypeVars != nil {
 		tv = a.TypeVars(structdef.TypeVars)
 	}

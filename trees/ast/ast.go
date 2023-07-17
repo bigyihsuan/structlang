@@ -67,23 +67,15 @@ func (fa FieldAccess) LastTok() *token.Token  { return fa.Field.LastToken }
 
 type Type struct {
 	Name Ident
-	Vars TypeVars
+	Vars []Type
 	Tokens
 }
 
 func (t Type) FirstTok() *token.Token { return t.FirstToken }
 func (t Type) LastTok() *token.Token  { return t.LastToken }
 
-type TypeVars struct {
-	Types []Type
-	Tokens
-}
-
-func (t TypeVars) FirstTok() *token.Token { return t.FirstToken }
-func (t TypeVars) LastTok() *token.Token  { return t.LastToken }
-
 type StructDef struct {
-	Vars   TypeVars
+	Vars   []Type
 	Fields []StructField
 	Tokens
 }
@@ -121,8 +113,8 @@ func (sl StructLiteral) FirstTok() *token.Token { return sl.FirstToken }
 func (sl StructLiteral) LastTok() *token.Token  { return sl.LastToken }
 
 type StructLiteralField struct {
-	FieldName Ident
-	Value     Expr
+	Name  Ident
+	Value Expr
 	Tokens
 }
 

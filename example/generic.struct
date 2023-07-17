@@ -1,6 +1,11 @@
 type container[T] = struct[T]{ v T };
 
-let strinst = container[string]{v: "hello"};
-let intinst = container[int]{v: 1234};
-let floatinst = container[float]{v: 56.789};
-let boolinst = container[bool]{v: false};
+let strInstance = container[string]{v: "hello"};
+let intInstance = container[int]{v: 1234};
+let floatInstance = container[float]{v: 56.789};
+let boolInstance = container[bool]{v: false};
+
+type pair[t,u] = struct[t,u]{ l t; r u };
+
+let strint = pair[string,int]{l: "hello", r: 123456};
+let intstr = pair[int,string]{l: 987654321, r: "world"};
