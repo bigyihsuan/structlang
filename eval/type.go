@@ -55,8 +55,6 @@ func (s StructType) Copy() (o StructType) {
 	for f, tn := range s.Fields {
 		o.Fields[f] = tn
 	}
-	for v, tn := range s.Vars {
-		o.Vars[v] = tn
-	}
+	copy(o.Vars, s.Vars)
 	return o
 }
