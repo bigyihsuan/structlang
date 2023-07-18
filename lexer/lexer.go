@@ -62,21 +62,6 @@ func (l *Lexer) Lex() token.Token {
 	}
 
 	/* check for tokens */
-	// single characters
-	symbolTokenType := token.GetSymbol(l.currentRune())
-	if symbolTokenType != token.NOT_FOUND {
-		l.addCurrent()
-		lexeme := l.resetLexeme()
-		return token.NewToken(symbolTokenType, lexeme, offset, line, column)
-	}
-	// arrow
-	if l.currentRune() == '-' && l.nextRune() == '>' {
-		l.addCurrent()
-		l.addCurrent()
-		lexeme := l.resetLexeme()
-		return token.NewToken(token.ARROW, lexeme, offset, line, column)
-	}
-
 	// comment
 	if l.currentRune() == '/' {
 		if next := l.nextRune(); next != -1 && next == '/' {
@@ -85,21 +70,38 @@ func (l *Lexer) Lex() token.Token {
 			return token.NewToken(token.COMMENT, comment, offset, line, column)
 		}
 	}
-
+	// arrow
+	if l.currentRune() == '-' && l.nextRune() == '>' {
+		l.addCurrent()
+		l.addCurrent()
+		lexeme := l.resetLexeme()
+		return token.NewToken(token.ARROW, lexeme, offset, line, column)
+	}
+	// gteq, lteq,
+	if l.currentRune() == '>' && l.nextRune() == '=' {
+		l.addCurrent()
+		l.addCurrent()
+		lexeme := l.resetLexeme()
+		return token.NewToken(token.GTEQ, lexeme, offset, line, column)
+	}
+	if l.currentRune() == '<' && l.nextRune() == '=' {
+		l.addCurrent()
+		l.addCurrent()
+		lexeme := l.resetLexeme()
+		return token.NewToken(token.LTEQ, lexeme, offset, line, column)
+	}
 	// int and float
 	if isDigit(l.currentRune()) {
 		numToken := l.intOrFloat()
 		lexeme := l.resetLexeme()
 		return token.NewToken(numToken, lexeme, offset, line, column)
 	}
-
 	// string
 	if l.currentRune() == '"' {
 		l.string()
 		lexeme := l.resetLexeme()
 		return token.NewToken(token.STRING, lexeme, offset, line, column)
 	}
-
 	// keywords and idents
 	if isIdentOrKeywordChar(l.currentRune()) {
 		l.addWhile(isIdentOrKeywordChar)
@@ -111,12 +113,19 @@ func (l *Lexer) Lex() token.Token {
 			return token.NewToken(token.IDENT, lexeme, offset, line, column)
 		}
 	}
+	// single characters
+	symbolTokenType := token.GetSymbol(l.currentRune())
+	if symbolTokenType != token.NOT_FOUND {
+		l.addCurrent()
+		lexeme := l.resetLexeme()
+		return token.NewToken(symbolTokenType, lexeme, offset, line, column)
+	}
 
 	return token.NewToken(token.ILLEGAL, string(l.currentRune()), offset, line, column)
 }
 
 func (l *Lexer) comment() {
-	l.addWhile(func(r rune) bool { return r != '\n' })
+	l.addWhile(func(r rune) bool { return r != '\n' || l.offset >= len(l.src) })
 	l.nextLine()
 }
 func (l *Lexer) intOrFloat() token.TokenType {

@@ -4,6 +4,7 @@
 - Composition/embedding only
 - Even ints are structs
 - Struct defs are also structs... (?)
+- <https://chat.stackexchange.com/transcript/message/63796738#63796738>
 
 ## types/structs
 

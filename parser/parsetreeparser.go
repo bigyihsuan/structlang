@@ -27,6 +27,11 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 	infixOps = infixLeft(infixOps, token.MINUS, precedence.SUM)
 	infixOps = infixLeft(infixOps, token.STAR, precedence.PRODUCT)
 	infixOps = infixLeft(infixOps, token.SLASH, precedence.PRODUCT)
+	infixOps = infixLeft(infixOps, token.GT, precedence.COMPARISON)
+	infixOps = infixLeft(infixOps, token.GTEQ, precedence.COMPARISON)
+	infixOps = infixLeft(infixOps, token.LT, precedence.COMPARISON)
+	infixOps = infixLeft(infixOps, token.LTEQ, precedence.COMPARISON)
+	infixOps = infixLeft(infixOps, token.EQ, precedence.COMPARISON)
 
 	// literals
 	for _, primitive := range token.Primitives() {

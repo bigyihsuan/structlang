@@ -312,5 +312,22 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 			return lprod.Div(rprod), nil
 		}
 	}
+
+	lcmp, isLcmp := left.(Cmp)
+	rcmp, isRcmp := right.(Cmp)
+	if isLcmp && isRcmp {
+		switch expr.Op.Type() {
+		case token.GT:
+			return lcmp.Gt(rcmp), nil
+		case token.GTEQ:
+			return lcmp.GtEq(rcmp), nil
+		case token.LT:
+			return lcmp.Lt(rcmp), nil
+		case token.LTEQ:
+			return lcmp.LtEq(rcmp), nil
+		case token.EQ:
+			return lcmp.Eq(rcmp), nil
+		}
+	}
 	return v, fmt.Errorf("invalid types `%T` and `%T` for infix op `%s`", left, right, expr.Op.Type())
 }

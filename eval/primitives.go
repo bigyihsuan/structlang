@@ -92,7 +92,7 @@ type IntValue struct {
 }
 
 func NewInt(v int) IntValue {
-	return IntValue{Primitive: NewPrimitive(v)}
+	return IntValue{NewPrimitive(v)}
 }
 
 func (iv IntValue) Pos() Value {
@@ -125,12 +125,28 @@ func (iv IntValue) Div(other Product) Value {
 	return NewInt(r)
 }
 
+func (iv IntValue) Gt(other Cmp) Value {
+	return NewBool(iv.Unwrap().(int) > other.Unwrap().(int))
+}
+func (iv IntValue) Lt(other Cmp) Value {
+	return NewBool(iv.Unwrap().(int) < other.Unwrap().(int))
+}
+func (iv IntValue) GtEq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(int) >= other.Unwrap().(int))
+}
+func (iv IntValue) LtEq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(int) <= other.Unwrap().(int))
+}
+func (iv IntValue) Eq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(int) == other.Unwrap().(int))
+}
+
 type FloatValue struct {
 	Primitive
 }
 
 func NewFloat(v float64) FloatValue {
-	return FloatValue{Primitive: NewPrimitive(v)}
+	return FloatValue{NewPrimitive(v)}
 }
 
 func (iv FloatValue) Pos() Value {
@@ -157,4 +173,28 @@ func (fv FloatValue) Mul(other Product) Value {
 func (fv FloatValue) Div(other Product) Value {
 	fv.v = fv.Unwrap().(float64) / other.Unwrap().(float64)
 	return fv
+}
+
+func (iv FloatValue) Gt(other Cmp) Value {
+	return NewBool(iv.Unwrap().(float64) > other.Unwrap().(float64))
+}
+func (iv FloatValue) Lt(other Cmp) Value {
+	return NewBool(iv.Unwrap().(float64) < other.Unwrap().(float64))
+}
+func (iv FloatValue) GtEq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(float64) >= other.Unwrap().(float64))
+}
+func (iv FloatValue) LtEq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(float64) <= other.Unwrap().(float64))
+}
+func (iv FloatValue) Eq(other Cmp) Value {
+	return NewBool(iv.Unwrap().(float64) == other.Unwrap().(float64))
+}
+
+type BoolValue struct {
+	Primitive
+}
+
+func NewBool(v bool) BoolValue {
+	return BoolValue{NewPrimitive(v)}
 }

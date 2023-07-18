@@ -28,9 +28,9 @@ const (
 	TRUE
 	FALSE
 	NIL
-	// AND
-	// OR
-	// NOT
+	AND
+	OR
+	NOT
 	keywords_end
 
 	symbols_begin
@@ -50,6 +50,11 @@ const (
 	MINUS
 	STAR
 	SLASH
+	GT
+	LT
+	// EQ (double equal?)
+	GTEQ
+	LTEQ
 	symbols_end
 )
 
@@ -93,6 +98,11 @@ var tokens = [...]string{
 	MINUS:     "-",
 	STAR:      "*",
 	SLASH:     "/",
+	GT:        ">",
+	LT:        "<",
+	// EQ (double equal?): "",
+	GTEQ: ">=",
+	LTEQ: "<=",
 }
 
 var primitives []TokenType

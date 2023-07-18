@@ -1,0 +1,21 @@
+let a = 5;
+let b = 10;
+let c = 20;
+
+let altb = a < b;
+let bgtc = b > c;
+let cgta = a > c;
+let aeqa = a = a;
+let alteqa = a <= a;
+let agteqa = a >= a;
+
+let fa = 5.5;
+let fb = 10.10;
+let fc = 20.20;
+
+let faltb = fa < fb;
+let fbgtc = fb > fc;
+let fcgta = fa > fc;
+let faeqa = fa = fa;
+let falteqa = fa <= fa;
+let fagteqa = fa >= fa;
