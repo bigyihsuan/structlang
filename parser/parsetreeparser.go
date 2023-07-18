@@ -21,6 +21,7 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 	prefixOps := make(map[token.TokenType]PrefixParselet)
 	prefixOps = prefix(prefixOps, token.PLUS, precedence.PREFIX)
 	prefixOps = prefix(prefixOps, token.MINUS, precedence.PREFIX)
+	prefixOps = prefix(prefixOps, token.NOT, precedence.PREFIX)
 
 	infixOps := make(map[token.TokenType]InfixParselet)
 	infixOps = infixLeft(infixOps, token.PLUS, precedence.SUM)
@@ -32,6 +33,8 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 	infixOps = infixLeft(infixOps, token.LT, precedence.COMPARISON)
 	infixOps = infixLeft(infixOps, token.LTEQ, precedence.COMPARISON)
 	infixOps = infixLeft(infixOps, token.EQ, precedence.COMPARISON)
+	infixOps = infixLeft(infixOps, token.AND, precedence.LOGICAL)
+	infixOps = infixLeft(infixOps, token.OR, precedence.LOGICAL)
 
 	// literals
 	for _, primitive := range token.Primitives() {

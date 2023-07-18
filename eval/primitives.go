@@ -199,6 +199,16 @@ func NewBool(v bool) BoolValue {
 	return BoolValue{NewPrimitive(v)}
 }
 
+func (bv BoolValue) Not() Value {
+	return NewBool(!bv.Unwrap().(bool))
+}
+func (bv BoolValue) And(other Log) Value {
+	return NewBool(bv.Unwrap().(bool) && other.Unwrap().(bool))
+}
+func (bv BoolValue) Or(other Log) Value {
+	return NewBool(bv.Unwrap().(bool) || other.Unwrap().(bool))
+}
+
 type StringValue struct {
 	Primitive
 }

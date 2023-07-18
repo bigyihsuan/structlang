@@ -1,0 +1,19 @@
+let t = true;
+let f = false;
+
+let aa = t and t;
+let ab = t and f;
+let ac = f and t;
+let ad = f and f;
+
+let ba = t or t;
+let bb = t or f;
+let bc = f or t;
+let bd = f or f;
+
+let ca = not t;
+let cb = not f;
+
+let da = t and not f;
+let db = not f and not t;
+let dc = t and t or f or t and f;

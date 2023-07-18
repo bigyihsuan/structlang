@@ -28,6 +28,7 @@ type Cmp interface {
 }
 
 type Log interface {
+	Value
 	Not() Value
 	And(other Log) Value
 	Or(other Log) Value

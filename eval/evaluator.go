@@ -168,10 +168,7 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
 		return NewFloat(v), err
-	case token.TRUE:
-		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewBool(v), err
-	case token.FALSE:
+	case token.TRUE, token.FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
 		return NewBool(v), err
 	case token.STRING:
@@ -277,6 +274,12 @@ func (e *Evaluator) PrefixExpr(currEnv *Env, expr ast.PrefixExpr) (v Value, err 
 			return neg.Neg(), nil
 		}
 	}
+	if log, isLog := v.(Log); isLog {
+		switch expr.Op.Type() {
+		case token.NOT:
+			return log.Not(), nil
+		}
+	}
 
 	return v, fmt.Errorf("invalid type `%T` for prefix op `%s`", v, expr.Op.Type())
 }
@@ -329,5 +332,17 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 			return lcmp.Eq(rcmp), nil
 		}
 	}
+
+	llog, isLlog := left.(Log)
+	rlog, isRlog := right.(Log)
+	if isLlog && isRlog {
+		switch expr.Op.Type() {
+		case token.AND:
+			return llog.And(rlog), nil
+		case token.OR:
+			return llog.Or(rlog), nil
+		}
+	}
+
 	return v, fmt.Errorf("invalid types `%T` and `%T` for infix op `%s`", left, right, expr.Op.Type())
 }

@@ -78,9 +78,9 @@ var tokens = [...]string{
 	TRUE:   "true",
 	FALSE:  "false",
 	NIL:    "nil",
-	// AND:    "and",
-	// OR:     "or",
-	// NOT:    "not",
+	AND:    "and",
+	OR:     "or",
+	NOT:    "not",
 
 	LBRACKET:  "[",
 	RBRACKET:  "]",
