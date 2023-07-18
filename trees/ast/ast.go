@@ -139,3 +139,14 @@ type PrefixExpr struct {
 func (pe PrefixExpr) exprTag()               {}
 func (pe PrefixExpr) FirstTok() *token.Token { return pe.FirstToken }
 func (pe PrefixExpr) LastTok() *token.Token  { return pe.LastToken }
+
+type InfixExpr struct {
+	Left  Expr
+	Op    token.Token
+	Right Expr
+	Tokens
+}
+
+func (ie InfixExpr) exprTag()               {}
+func (ie InfixExpr) FirstTok() *token.Token { return ie.FirstToken }
+func (ie InfixExpr) LastTok() *token.Token  { return ie.LastToken }

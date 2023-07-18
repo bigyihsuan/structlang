@@ -8,6 +8,7 @@ import (
 type Value interface {
 	Get(field string) Value
 	TypeName() TypeName
+	Unwrap() any
 }
 
 type StructValue struct {
@@ -46,4 +47,8 @@ func (sv StructValue) TypeName() TypeName {
 		fields = append(fields, fmt.Sprintf("%s %s", name, field.TypeName().Name))
 	}
 	return TypeName{Name: fmt.Sprintf("%s{%s}", sv.Name, strings.Join(fields, "; "))}
+}
+func (sv StructValue) Unwrap() any {
+	// TODO: what is this unwrapped?
+	return sv.Fields
 }

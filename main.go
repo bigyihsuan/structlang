@@ -76,6 +76,9 @@ func main() {
 		pretty.Println(tree)
 		fmt.Println()
 	}
+	for _, stmt := range tree {
+		fmt.Println(stmt)
+	}
 
 	astparser := parser.NewAstParser(tree)
 	asttree := astparser.Parse()

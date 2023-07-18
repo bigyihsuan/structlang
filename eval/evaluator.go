@@ -151,6 +151,8 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		return e.FieldAccess(currEnv, expr)
 	case ast.PrefixExpr:
 		return e.PrefixExpr(currEnv, expr)
+	case ast.InfixExpr:
+		return e.InfixExpr(currEnv, expr)
 	default:
 		fmt.Printf("unknown expr: %T\n", expr)
 	}
@@ -277,4 +279,38 @@ func (e *Evaluator) PrefixExpr(currEnv *Env, expr ast.PrefixExpr) (v Value, err 
 	}
 
 	return v, fmt.Errorf("invalid type `%T` for prefix op `%s`", v, expr.Op.Type())
+}
+
+func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err error) {
+	left, err := e.Expr(currEnv, expr.Left)
+	if err != nil {
+		return left, err
+	}
+	right, err := e.Expr(currEnv, expr.Right)
+	if err != nil {
+		return right, err
+	}
+
+	lsum, isLsum := left.(Sum)
+	rsum, isRsum := right.(Sum)
+	if isLsum && isRsum {
+		switch expr.Op.Type() {
+		case token.PLUS:
+			return lsum.Add(rsum), nil
+		case token.MINUS:
+			return lsum.Sub(rsum), nil
+		}
+	}
+
+	lprod, isLprod := left.(Product)
+	rprod, isRprod := right.(Product)
+	if isLprod && isRprod {
+		switch expr.Op.Type() {
+		case token.STAR:
+			return lprod.Mul(rprod), nil
+		case token.SLASH:
+			return lprod.Div(rprod), nil
+		}
+	}
+	return v, fmt.Errorf("invalid types `%T` and `%T` for infix op `%s`", left, right, expr.Op.Type())
 }

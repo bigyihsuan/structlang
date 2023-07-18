@@ -83,6 +83,10 @@ func (p Primitive) TypeName() TypeName {
 	return nilValue.TypeName()
 }
 
+func (p Primitive) Unwrap() any {
+	return p.v
+}
+
 type IntValue struct {
 	Primitive
 }
@@ -92,12 +96,33 @@ func NewInt(v int) IntValue {
 }
 
 func (iv IntValue) Pos() Value {
-	iv.v = +iv.v.(int)
+	iv.v = +iv.Unwrap().(int)
 	return iv
 }
 func (iv IntValue) Neg() Value {
-	iv.v = -iv.v.(int)
+	iv.v = -iv.Unwrap().(int)
 	return iv
+}
+
+func (iv IntValue) Add(other Sum) Value {
+	r := iv.Unwrap().(int) + other.Unwrap().(int)
+	return NewInt(r)
+}
+func (iv IntValue) Sub(other Sum) Value {
+	r := iv.Unwrap().(int) - other.Unwrap().(int)
+	return NewInt(r)
+}
+func (iv IntValue) Mul(other Product) Value {
+	r := iv.Unwrap().(int) * other.Unwrap().(int)
+	return NewInt(r)
+}
+func (iv IntValue) Div(other Product) Value {
+	o := other.Unwrap().(int)
+	if o == 0 {
+		return NewInt(0)
+	}
+	r := iv.Unwrap().(int) / o
+	return NewInt(r)
 }
 
 type FloatValue struct {
@@ -115,4 +140,21 @@ func (iv FloatValue) Pos() Value {
 func (iv FloatValue) Neg() Value {
 	iv.v = -iv.v.(float64)
 	return iv
+}
+
+func (fv FloatValue) Add(other Sum) Value {
+	fv.v = fv.Unwrap().(float64) + other.Unwrap().(float64)
+	return fv
+}
+func (fv FloatValue) Sub(other Sum) Value {
+	fv.v = fv.Unwrap().(float64) - other.Unwrap().(float64)
+	return fv
+}
+func (fv FloatValue) Mul(other Product) Value {
+	fv.v = fv.Unwrap().(float64) * other.Unwrap().(float64)
+	return fv
+}
+func (fv FloatValue) Div(other Product) Value {
+	fv.v = fv.Unwrap().(float64) / other.Unwrap().(float64)
+	return fv
 }
