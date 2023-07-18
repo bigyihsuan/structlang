@@ -198,3 +198,27 @@ type BoolValue struct {
 func NewBool(v bool) BoolValue {
 	return BoolValue{NewPrimitive(v)}
 }
+
+type StringValue struct {
+	Primitive
+}
+
+func NewString(v string) StringValue {
+	return StringValue{NewPrimitive(v)}
+}
+
+func (sv StringValue) Gt(other Cmp) Value {
+	return NewBool(sv.Unwrap().(string) > other.Unwrap().(string))
+}
+func (sv StringValue) Lt(other Cmp) Value {
+	return NewBool(sv.Unwrap().(string) < other.Unwrap().(string))
+}
+func (sv StringValue) GtEq(other Cmp) Value {
+	return NewBool(sv.Unwrap().(string) >= other.Unwrap().(string))
+}
+func (sv StringValue) LtEq(other Cmp) Value {
+	return NewBool(sv.Unwrap().(string) <= other.Unwrap().(string))
+}
+func (sv StringValue) Eq(other Cmp) Value {
+	return NewBool(sv.Unwrap().(string) == other.Unwrap().(string))
+}

@@ -1,0 +1,9 @@
+let h = "hello";
+let w = "world";
+let he = "he";
+
+let a = h < w;
+let b = he < h;
+let bb = he > h;
+let c = he = he;
+let d = w > he;

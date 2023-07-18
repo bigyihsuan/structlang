@@ -170,12 +170,12 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 		return NewFloat(v), err
 	case token.TRUE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewPrimitive(v), err
+		return NewBool(v), err
 	case token.FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewPrimitive(v), err
+		return NewBool(v), err
 	case token.STRING:
-		return NewPrimitive(expr.Token.Lexeme()), nil
+		return NewString(expr.Token.Lexeme()), nil
 	case token.NIL:
 		return NewNil(), nil
 	default:
