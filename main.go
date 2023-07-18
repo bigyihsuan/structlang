@@ -9,6 +9,7 @@ import (
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
 	"github.com/jessevdk/go-flags"
+	"github.com/kr/pretty"
 )
 
 const srcTemplate = `"""
@@ -58,10 +59,12 @@ func main() {
 
 	tokens = lexer.ClearComments(tokens)
 
-	// for _, tok := range tokens {
-	// 	fmt.Println(tok.String())
-	// }
-	// fmt.Println()
+	if opts.Debug {
+		for _, tok := range tokens {
+			fmt.Println(tok.String())
+		}
+		fmt.Println()
+	}
 
 	p := parser.NewParser(tokens)
 	tree, errs := p.Parse()
@@ -69,16 +72,20 @@ func main() {
 		fmt.Fprintln(os.Stderr, errs)
 		return
 	}
-	// pretty.Println(tree)
-	// fmt.Println()
+	if opts.Debug {
+		pretty.Println(tree)
+		fmt.Println()
+	}
 
 	astparser := parser.NewAstParser(tree)
 	asttree := astparser.Parse()
-	// pretty.Println(asttree)
-	// fmt.Println()
+	if opts.Debug {
+		pretty.Println(asttree)
+		fmt.Println()
+	}
 
 	evaluator := eval.NewEvaluator(asttree)
-	err = evaluator.Stmt(&evaluator.BaseEnv)
+	err = evaluator.Evaluate(&evaluator.BaseEnv)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -91,7 +98,6 @@ func main() {
 	fmt.Println()
 	fmt.Println("vars:\n=======")
 	for id, val := range evaluator.BaseEnv.Variables {
-		fmt.Printf("%s = %v\n", id, val)
-		fmt.Println(val.TypeName())
+		fmt.Printf("%s %s = %v\n", id, val.TypeName(), val)
 	}
 }

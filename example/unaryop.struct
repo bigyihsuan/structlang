@@ -1,0 +1,11 @@
+let a = 10;
+let b = +a;
+let c = -a;
+let d = +-+-+-+---++++---a;
+let e = --a;
+
+let fa = 1.2345;
+let fb = +fa;
+let fc = -fa;
+let fd = +-+-+-+---++++---fa;
+let fe = --fa;

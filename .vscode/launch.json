@@ -12,7 +12,7 @@
             "program": "${workspaceFolder}",
             "args": [
                 "-f",
-                "example/generic.struct"
+                "example/unaryop.struct"
             ]
         }
     ]

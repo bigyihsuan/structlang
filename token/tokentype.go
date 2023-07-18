@@ -11,12 +11,12 @@ const (
 	COMMENT
 	EOF
 
-	literals_begin
 	IDENT
+	literals_begin
 	INT
 	FLOAT
-	BOOL_TRUE
-	BOOL_FALSE
+	// BOOL_TRUE
+	// BOOL_FALSE
 	STRING
 	literals_end
 
@@ -28,6 +28,9 @@ const (
 	TRUE
 	FALSE
 	NIL
+	// AND
+	// OR
+	// NOT
 	keywords_end
 
 	symbols_begin
@@ -43,6 +46,10 @@ const (
 	COLON
 	EQ
 	ARROW
+	PLUS
+	MINUS
+	STAR
+	SLASH
 	symbols_end
 )
 
@@ -52,12 +59,12 @@ var tokens = [...]string{
 	COMMENT:    "COMMENT",
 	EOF:        "EOF",
 
-	IDENT:      "IDENT",
-	INT:        "INT",
-	FLOAT:      "FLOAT",
-	BOOL_TRUE:  "TRUE",
-	BOOL_FALSE: "FALSE",
-	STRING:     "STRING",
+	IDENT: "IDENT",
+	INT:   "INT",
+	FLOAT: "FLOAT",
+	// BOOL_TRUE:  "TRUE",
+	// BOOL_FALSE: "FALSE",
+	STRING: "STRING",
 
 	STRUCT: "struct",
 	TYPE:   "type",
@@ -66,6 +73,9 @@ var tokens = [...]string{
 	TRUE:   "true",
 	FALSE:  "false",
 	NIL:    "nil",
+	// AND:    "and",
+	// OR:     "or",
+	// NOT:    "not",
 
 	LBRACKET:  "[",
 	RBRACKET:  "]",
@@ -79,7 +89,13 @@ var tokens = [...]string{
 	COLON:     ":",
 	EQ:        "=",
 	ARROW:     "->",
+	PLUS:      "+",
+	MINUS:     "-",
+	STAR:      "*",
+	SLASH:     "/",
 }
+
+var primitives []TokenType
 
 var keywords map[string]TokenType
 
@@ -88,6 +104,13 @@ func init() {
 	for i := keywords_begin + 1; i < keywords_end; i++ {
 		keywords[tokens[i]] = i
 	}
+
+	for i := literals_begin + 1; i < literals_end; i++ {
+		primitives = append(primitives, i)
+	}
+	primitives = append(primitives, TRUE)
+	primitives = append(primitives, FALSE)
+	primitives = append(primitives, NIL)
 }
 
 func IsSymbol(r rune) bool {
@@ -122,4 +145,12 @@ func GetKeyword(s string) TokenType {
 		}
 	}
 	return NOT_FOUND
+}
+
+func IsLiteral(tt TokenType) bool {
+	return (literals_begin < tt || tt < literals_end) || tt == NIL || tt == FALSE || tt == TRUE
+}
+
+func Primitives() []TokenType {
+	return primitives
 }

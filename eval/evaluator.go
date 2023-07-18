@@ -21,7 +21,7 @@ func NewEvaluator(code []ast.Stmt) Evaluator {
 	return e
 }
 
-func (e *Evaluator) Stmt(currEnv *Env) error {
+func (e *Evaluator) Evaluate(currEnv *Env) error {
 	var errs error
 	for _, stmt := range e.Code {
 		var err error = nil
@@ -149,6 +149,8 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		return e.StructLiteral(currEnv, expr)
 	case ast.FieldAccess:
 		return e.FieldAccess(currEnv, expr)
+	case ast.PrefixExpr:
+		return e.PrefixExpr(currEnv, expr)
 	default:
 		fmt.Printf("unknown expr: %T\n", expr)
 	}
@@ -160,14 +162,14 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	switch expr.Token.Type() {
 	case token.INT:
 		v, err := strconv.Atoi(expr.Token.Lexeme())
-		return NewPrimitive(v), err
+		return NewInt(v), err
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
-		return NewPrimitive(v), err
-	case token.BOOL_TRUE, token.TRUE:
+		return NewFloat(v), err
+	case token.TRUE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
 		return NewPrimitive(v), err
-	case token.BOOL_FALSE, token.FALSE:
+	case token.FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
 		return NewPrimitive(v), err
 	case token.STRING:
@@ -257,4 +259,22 @@ func (e *Evaluator) FieldAccess(currEnv *Env, expr ast.FieldAccess) (v Value, er
 		base = b
 	}
 	return base.Get(expr.Field.Name), nil
+}
+
+func (e *Evaluator) PrefixExpr(currEnv *Env, expr ast.PrefixExpr) (v Value, err error) {
+	v, err = e.Expr(currEnv, expr.Right)
+	if err != nil {
+		return v, err
+	}
+
+	if neg, isNeg := v.(Neg); isNeg {
+		switch expr.Op.Type() {
+		case token.PLUS:
+			return neg.Pos(), nil
+		case token.MINUS:
+			return neg.Neg(), nil
+		}
+	}
+
+	return v, fmt.Errorf("invalid type `%T` for prefix op `%s`", v, expr.Op.Type())
 }

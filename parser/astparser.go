@@ -121,6 +121,8 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 		return a.Ident(expr)
 	case parsetree.FieldAccess:
 		return a.FieldAccess(expr)
+	case parsetree.PrefixExpr:
+		return a.PrefixExpr(expr)
 	default:
 		fmt.Printf("unknown expr %T\n", expr)
 	}
@@ -241,6 +243,18 @@ func (a AstParser) FieldAccess(expr parsetree.FieldAccess) (fa ast.FieldAccess) 
 		Tokens: ast.Tokens{
 			FirstToken: lv.FirstTok(),
 			LastToken:  f.LastTok(),
+		},
+	}
+}
+
+func (a AstParser) PrefixExpr(expr parsetree.PrefixExpr) ast.Expr {
+	right := a.Expr(expr.Right)
+	return ast.PrefixExpr{
+		Op:    expr.Op,
+		Right: right,
+		Tokens: ast.Tokens{
+			FirstToken: &expr.Op,
+			LastToken:  right.LastTok(),
 		},
 	}
 }

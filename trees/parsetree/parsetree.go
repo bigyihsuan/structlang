@@ -5,6 +5,8 @@ import (
 	"github.com/bigyihsuan/structlang/util"
 )
 
+type SeparatedList[T any, U any] []util.Pair[T, *U] // U-separated list of Ts, with optional trailing U
+
 type Stmt interface{ stmtTag() }
 type Expr interface{ exprTag() }
 
@@ -107,4 +109,17 @@ type StructField struct {
 	Sc    *token.Token
 }
 
-type SeparatedList[T any, U any] []util.Pair[T, *U] // U-separated list of Ts, with optional trailing U
+type PrefixExpr struct {
+	Op    token.Token
+	Right Expr
+}
+
+func (pe PrefixExpr) exprTag() {}
+
+type InfixExpr struct {
+	Left  Expr
+	Op    token.Token
+	Right Expr
+}
+
+func (ie InfixExpr) exprTag() {}

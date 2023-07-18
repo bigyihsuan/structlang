@@ -6,18 +6,71 @@ import (
 
 	"github.com/bigyihsuan/structlang/token"
 	"github.com/bigyihsuan/structlang/trees/parsetree"
+	"github.com/bigyihsuan/structlang/trees/precedence"
 	"github.com/bigyihsuan/structlang/util"
 )
 
 type ParseTreeParser struct {
-	tokens []token.Token
-	idx    int
+	tokens    []token.Token
+	idx       int
+	prefixOps map[token.TokenType]PrefixParselet
+	infixOps  map[token.TokenType]InfixParselet
 }
 
 func NewParser(tokens []token.Token) ParseTreeParser {
+	prefixOps := make(map[token.TokenType]PrefixParselet)
+	prefixOps = prefix(prefixOps, token.PLUS, precedence.PREFIX)
+	prefixOps = prefix(prefixOps, token.MINUS, precedence.PREFIX)
+
+	infixOps := make(map[token.TokenType]InfixParselet)
+	infixOps = infixLeft(infixOps, token.PLUS, precedence.SUM)
+	infixOps = infixLeft(infixOps, token.MINUS, precedence.SUM)
+	infixOps = infixLeft(infixOps, token.STAR, precedence.PRODUCT)
+	infixOps = infixLeft(infixOps, token.SLASH, precedence.PRODUCT)
+
+	// literals
+	for _, primitive := range token.Primitives() {
+		registerPrefix(prefixOps, primitive, LiteralParselet{})
+	}
+	registerPrefix(prefixOps, token.IDENT, IdentParselet{})
+
 	return ParseTreeParser{
-		tokens: tokens,
-		idx:    0,
+		tokens:    tokens,
+		idx:       0,
+		prefixOps: prefixOps,
+		infixOps:  infixOps,
+	}
+}
+
+func prefix(prefixOps map[token.TokenType]PrefixParselet, tt token.TokenType, prec precedence.Precedence) map[token.TokenType]PrefixParselet {
+	registerPrefix(prefixOps, tt, PrefixOperator{prec})
+	return prefixOps
+}
+func infixLeft(infixOps map[token.TokenType]InfixParselet, tt token.TokenType, prec precedence.Precedence) map[token.TokenType]InfixParselet {
+	registerInfix(infixOps, tt, BinaryOperator{prec, false})
+	return infixOps
+}
+func infixRight(infixOps map[token.TokenType]InfixParselet, tt token.TokenType, prec precedence.Precedence) map[token.TokenType]InfixParselet {
+	registerInfix(infixOps, tt, BinaryOperator{prec, true})
+	return infixOps
+}
+func registerPrefix(prefixOps map[token.TokenType]PrefixParselet, tt token.TokenType, pp PrefixParselet) {
+	prefixOps[tt] = pp
+}
+func registerInfix(prefixOps map[token.TokenType]InfixParselet, tt token.TokenType, ip InfixParselet) {
+	prefixOps[tt] = ip
+}
+
+func (p ParseTreeParser) Precedence() (precedence.Precedence, error) {
+	tok, err := p.peekNextToken()
+	if err != nil {
+		return 0, err
+	}
+	infix, hasInfix := p.infixOps[tok.Type()]
+	if hasInfix {
+		return infix.Precedence(), nil
+	} else {
+		return precedence.BOTTOM, nil
 	}
 }
 
@@ -140,7 +193,7 @@ func (p *ParseTreeParser) VarDef() (vd parsetree.VarDef, errs error) {
 	if err != nil {
 		return vd, errors.Join(vderr, err)
 	}
-	rvalue, err := p.Expr()
+	rvalue, err := p.Expr(precedence.BOTTOM)
 	if err != nil {
 		return vd, errors.Join(vderr, errors.New("expected rvalue"), err)
 	}
@@ -165,7 +218,7 @@ func (p *ParseTreeParser) VarSet() (vs parsetree.VarSet, errs error) {
 	if err != nil {
 		return vs, errors.Join(vserr, err)
 	}
-	rvalue, err := p.Expr()
+	rvalue, err := p.Expr(precedence.BOTTOM)
 	if err != nil {
 		return vs, errors.Join(vserr, errors.New("expected rvalue"), err)
 	}
@@ -372,28 +425,64 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[parsetree.Id
 	}
 }
 
-func (p *ParseTreeParser) Expr() (expr parsetree.Expr, err error) {
+func (p *ParseTreeParser) Expr(precedence precedence.Precedence) (expr parsetree.Expr, err error) {
 	exprerr := errors.New("in expr")
-	tok, err := p.peekNextToken()
+	tok, err := p.getNextToken()
 	if err != nil {
 		return expr, errors.Join(exprerr, err)
 	}
-	switch tt := tok.Type(); tt {
-	case token.NIL, token.BOOL_FALSE, token.BOOL_TRUE, token.FALSE, token.TRUE, token.INT, token.FLOAT, token.STRING:
-		tok, err := p.getNextToken()
+	pp, isPrefix := p.prefixOps[tok.Type()]
+	if !isPrefix {
+		return expr, errors.Join(exprerr, fmt.Errorf("could not get prefix parslet for token `%s`", tok))
+	}
+	expr, err = pp.Parse(p, *tok)
+	if err != nil {
+		return expr, errors.Join(exprerr, err)
+	}
+
+	nextPrecedence, err := p.Precedence()
+	if err != nil {
+		return expr, errors.Join(exprerr, err)
+	}
+	for precedence < nextPrecedence {
+		op, err := p.getNextToken()
 		if err != nil {
 			return expr, errors.Join(exprerr, err)
 		}
-		return parsetree.Literal{Token: *tok}, nil
-	case token.IDENT:
-		expr, err := p.IdentOrStructLiteralOrFieldAccess()
-		if err != nil {
-			return expr, errors.Join(exprerr, errors.New("expected ident or struct literal"), err)
+		infix, hasInfix := p.infixOps[op.Type()]
+		if !hasInfix {
+			return expr, errors.Join(exprerr, fmt.Errorf("could not get infix parslet for token `%s`", tok))
 		}
-		return expr, nil
-	default:
-		return expr, errors.Join(exprerr, fmt.Errorf("unknown token for expr: type=`%s` lexeme=`%s`", tok.Type(), tok.Lexeme()))
+		expr, err = infix.Parse(p, expr, *op)
+		if err != nil {
+			return expr, errors.Join(exprerr, err)
+		}
+		nextPrecedence, err = p.Precedence()
+		if err != nil {
+			return expr, errors.Join(exprerr, err)
+		}
 	}
+	return expr, nil
+
+	// switch tt := tok.Type(); {
+	// case token.IsLiteral(tt):
+	// 	expr, err = p.Literal()
+	// case tt == token.IDENT:
+	// 	expr, err = p.IdentOrStructLiteralOrFieldAccess()
+	// }
+	// if err != nil {
+	// 	return expr, errors.Join(exprerr, err)
+	// }
+	// return nil, errors.Join(exprerr, fmt.Errorf("unknown token for expr: type=`%s` lexeme=`%s`", tok.Type(), tok.Lexeme()))
+}
+
+func (p *ParseTreeParser) Literal() (expr parsetree.Literal, err error) {
+	literr := errors.New("in literal")
+	tok, err := p.getNextToken()
+	if err != nil {
+		return expr, errors.Join(literr, err)
+	}
+	return parsetree.Literal{Token: *tok}, nil
 }
 
 func (p *ParseTreeParser) IdentOrStructLiteralOrFieldAccess() (expr parsetree.Expr, err error) {
@@ -472,7 +561,7 @@ func (p *ParseTreeParser) StructLiteralFields() (slfs parsetree.SeparatedList[pa
 		if err != nil {
 			return slfs, errors.Join(slfserr, err)
 		}
-		value, err := p.Expr()
+		value, err := p.Expr(precedence.BOTTOM)
 		if err != nil {
 			return slfs, errors.Join(slfserr, errors.New("expected expr"), err)
 		}

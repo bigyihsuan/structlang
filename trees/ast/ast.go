@@ -129,3 +129,13 @@ type Literal struct {
 func (l Literal) exprTag()               {}
 func (l Literal) FirstTok() *token.Token { return l.FirstToken }
 func (l Literal) LastTok() *token.Token  { return l.LastToken }
+
+type PrefixExpr struct {
+	Op    token.Token
+	Right Expr
+	Tokens
+}
+
+func (pe PrefixExpr) exprTag()               {}
+func (pe PrefixExpr) FirstTok() *token.Token { return pe.FirstToken }
+func (pe PrefixExpr) LastTok() *token.Token  { return pe.LastToken }
