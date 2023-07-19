@@ -9,4 +9,5 @@ const (
 	SUM
 	PRODUCT
 	PREFIX
+	CALL
 )

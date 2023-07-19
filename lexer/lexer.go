@@ -138,7 +138,7 @@ func (l *Lexer) intOrFloat() token.TokenType {
 	return token.FLOAT
 }
 func (l *Lexer) string() {
-	l.addCurrent() // first quote
+	l.nextCol() // ignore first quote
 	for l.currentRune() != '"' {
 		if l.currentRune() == '\\' {
 			// escaped character
@@ -148,7 +148,7 @@ func (l *Lexer) string() {
 			l.addCurrent()
 		}
 	}
-	l.addCurrent() // last quote
+	l.nextCol() // ignore last quote
 }
 
 func (l Lexer) currentRune() rune { return l.src[l.offset] }

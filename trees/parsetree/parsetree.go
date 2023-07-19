@@ -10,8 +10,22 @@ import (
 
 type SeparatedList[T any, U any] []util.Pair[T, *U] // U-separated list of Ts, with optional trailing U
 
-type Stmt interface{ stmtTag() }
-type Expr interface{ exprTag() }
+type Stmt interface {
+	fmt.Stringer
+	stmtTag()
+}
+type Expr interface {
+	fmt.Stringer
+	exprTag()
+}
+
+type ExprStmt struct {
+	Expr Expr
+	Sc   token.Token
+}
+
+func (es ExprStmt) stmtTag()       {}
+func (es ExprStmt) String() string { return fmt.Sprintf("(%s ;)", es.Expr) }
 
 type VarDef struct {
 	LetKw  token.Token
@@ -192,4 +206,21 @@ type GroupingExpr struct {
 func (ge GroupingExpr) exprTag() {}
 func (ge GroupingExpr) String() string {
 	return fmt.Sprintf("(%s)", ge.Expr)
+}
+
+type FuncCallExpr struct {
+	Name   Lvalue
+	Lparen token.Token
+	Args   SeparatedList[Expr, token.Token]
+	Rparen token.Token
+}
+
+func (fce FuncCallExpr) exprTag() {}
+func (fce FuncCallExpr) String() string {
+	args := make([]string, len(fce.Args))
+	for _, pair := range fce.Args {
+		arg := pair.First
+		args = append(args, arg.String())
+	}
+	return fmt.Sprintf("(%s (%s))", fce.Name, strings.Join(args, " "))
 }

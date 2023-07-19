@@ -1,0 +1,6 @@
+println("hello world!");
+println(123456);
+println(555.555);
+println(true);
+println(false);
+println(nil);

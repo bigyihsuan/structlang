@@ -4,14 +4,14 @@ import "fmt"
 
 type Env struct {
 	Parent    *Env
-	Types     map[string]StructType
+	Types     map[string]Type
 	Variables map[string]Value
 }
 
 func NewEnv() Env {
 	return Env{
 		Parent:    nil,
-		Types:     make(map[string]StructType),
+		Types:     make(map[string]Type),
 		Variables: make(map[string]Value),
 	}
 }
@@ -19,15 +19,15 @@ func NewEnv() Env {
 func (e Env) MakeChild() Env {
 	return Env{
 		Parent:    &e,
-		Types:     make(map[string]StructType),
+		Types:     make(map[string]Type),
 		Variables: make(map[string]Value),
 	}
 }
 
-func (e *Env) DefineType(typeName string, structType StructType) {
+func (e *Env) DefineType(typeName string, structType Type) {
 	e.Types[typeName] = structType
 }
-func (e Env) GetType(typeName string) *StructType {
+func (e Env) GetType(typeName string) *Type {
 	if t, ok := e.Types[typeName]; ok {
 		return &t
 	} else if e.Parent != nil {

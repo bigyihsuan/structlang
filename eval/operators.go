@@ -33,3 +33,8 @@ type Log interface {
 	And(other Log) Value
 	Or(other Log) Value
 }
+
+type Call interface {
+	Value
+	Call(evaluator Evaluator, args ...Value) Value
+}

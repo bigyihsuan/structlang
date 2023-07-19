@@ -23,12 +23,12 @@ func (tn TypeName) String() string {
 	}
 }
 
-type StructType struct {
+type Type struct {
 	Fields map[string]TypeName
 	Vars   []TypeName // positional typeargs
 }
 
-func (s StructType) String() string {
+func (s Type) String() string {
 	fs := []string{}
 	for id, tn := range s.Fields {
 		fs = append(fs, fmt.Sprintf("%s %s", id, tn.String()))
@@ -48,7 +48,7 @@ func (s StructType) String() string {
 	return fmt.Sprintf("struct%s{%s}", vars, fields)
 }
 
-func (s StructType) Copy() (o StructType) {
+func (s Type) Copy() (o Type) {
 	o.Fields = make(map[string]TypeName)
 	o.Vars = make([]TypeName, len(s.Vars))
 

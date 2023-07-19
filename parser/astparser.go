@@ -29,40 +29,43 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 	case parsetree.TypeDef:
 		typename := a.Type(stmt.TypeName)
 		structdef := a.StructDef(stmt.StructDef)
-		firsttoken := stmt.TypeKw
-		lasttoken := stmt.Sc
 		return ast.TypeDef{
 			Type:      typename,
 			StructDef: structdef,
 			Tokens: ast.Tokens{
-				FirstToken: &firsttoken,
-				LastToken:  &lasttoken,
+				FirstToken: &stmt.TypeKw,
+				LastToken:  &stmt.Sc,
 			},
 		}
 	case parsetree.VarDef:
 		lvalue := a.Lvalue(stmt.Lvalue)
 		rvalue := a.Expr(stmt.Rvalue)
-		firsttoken := stmt.LetKw
-		lasttoken := stmt.Sc
 		return ast.VarDef{
 			Lvalue: lvalue,
 			Rvalue: rvalue,
 			Tokens: ast.Tokens{
-				FirstToken: &firsttoken,
-				LastToken:  &lasttoken,
+				FirstToken: &stmt.LetKw,
+				LastToken:  &stmt.Sc,
 			},
 		}
 	case parsetree.VarSet:
 		lvalue := a.Lvalue(stmt.Lvalue)
 		rvalue := a.Expr(stmt.Rvalue)
-		firsttoken := stmt.SetKw
-		lasttoken := stmt.Sc
 		return ast.VarSet{
 			Lvalue: lvalue,
 			Rvalue: rvalue,
 			Tokens: ast.Tokens{
-				FirstToken: &firsttoken,
-				LastToken:  &lasttoken,
+				FirstToken: &stmt.SetKw,
+				LastToken:  &stmt.Sc,
+			},
+		}
+	case parsetree.ExprStmt:
+		expr := a.Expr(stmt.Expr)
+		return ast.ExprStmt{
+			Expr: expr,
+			Tokens: ast.Tokens{
+				FirstToken: expr.FirstTok(),
+				LastToken:  &stmt.Sc,
 			},
 		}
 	}
@@ -88,7 +91,7 @@ func (a AstParser) Lvalue(lv parsetree.Lvalue) (l ast.Lvalue) {
 			},
 		}
 	default:
-		fmt.Printf("unknown ast %T\n", lv)
+		fmt.Printf("ast unknown ast %T\n", lv)
 	}
 	return
 }
@@ -127,8 +130,10 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 		return a.InfixExpr(expr)
 	case parsetree.GroupingExpr:
 		return a.GroupingExpr(expr)
+	case parsetree.FuncCallExpr:
+		return a.FuncCallExpr(expr)
 	default:
-		fmt.Printf("unknown expr %T\n", expr)
+		fmt.Printf("ast unknown expr %T\n", expr)
 	}
 	return
 }
@@ -283,6 +288,27 @@ func (a AstParser) GroupingExpr(expr parsetree.GroupingExpr) ast.Expr {
 		Tokens: ast.Tokens{
 			FirstToken: &expr.Lparen,
 			LastToken:  &expr.Rparen,
+		},
+	}
+}
+
+func (a AstParser) FuncCallExpr(expr parsetree.FuncCallExpr) ast.Expr {
+	name := a.Lvalue(expr.Name)
+	args := []ast.Expr{}
+	for _, pair := range expr.Args {
+		arg := a.Expr(pair.First)
+		args = append(args, arg)
+	}
+	lastTok := name.LastTok()
+	if len(args) > 0 {
+		lastTok = args[len(args)-1].LastTok()
+	}
+	return ast.FuncCallExpr{
+		Name: name,
+		Args: args,
+		Tokens: ast.Tokens{
+			FirstToken: name.FirstTok(),
+			LastToken:  lastTok,
 		},
 	}
 }

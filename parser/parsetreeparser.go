@@ -42,6 +42,7 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 	}
 	registerPrefix(prefixOps, token.IDENT, IdentParselet{})
 	registerPrefix(prefixOps, token.LPAREN, GroupingParselet{})
+	registerInfix(infixOps, token.LPAREN, CallParselet{})
 
 	return ParseTreeParser{
 		tokens:    tokens,
@@ -184,7 +185,12 @@ func (p *ParseTreeParser) Stmt() (stmt parsetree.Stmt, errs error) {
 		}
 		return vs, nil
 	default:
-		return nil, errors.Join(stmterr, fmt.Errorf("unknown for Stmt: type=`%s` lexeme=`%s`", kw.Type(), kw.Lexeme()))
+		expr, err := p.ExprStmt()
+		if err != nil {
+			return expr, errors.Join(stmterr, err)
+		}
+		return expr, nil
+		// return nil, errors.Join(stmterr, fmt.Errorf("unknown for Stmt: type=`%s` lexeme=`%s`", kw.Type(), kw.Lexeme()))
 	}
 }
 
@@ -432,6 +438,19 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[parsetree.Id
 		names = append(names, util.Pair[parsetree.Ident, *token.Token]{First: name, Last: comma})
 		// no trailing comma allowed
 	}
+}
+
+func (p *ParseTreeParser) ExprStmt() (expr parsetree.ExprStmt, err error) {
+	eserr := errors.New("in exprstmt")
+	e, err := p.Expr(precedence.BOTTOM)
+	if err != nil {
+		return expr, errors.Join(eserr, err)
+	}
+	sc, err := p.expectGet(token.SEMICOLON)
+	if err != nil {
+		return expr, errors.Join(eserr, err)
+	}
+	return parsetree.ExprStmt{Expr: e, Sc: *sc}, nil
 }
 
 func (p *ParseTreeParser) Expr(precedence precedence.Precedence) (expr parsetree.Expr, err error) {

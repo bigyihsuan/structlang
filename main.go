@@ -38,7 +38,7 @@ func main() {
 		bytes, err := os.ReadFile(string(opts.File))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return
 		}
 		src = string(bytes)
 	} else if opts.Code != "" {
@@ -47,8 +47,10 @@ func main() {
 	src += "\n"
 
 	lex, _ := lexer.NewLexer(src)
-	fmt.Printf(srcTemplate, src)
-	fmt.Println()
+	if opts.Debug {
+		fmt.Printf(srcTemplate, src)
+		fmt.Println()
+	}
 
 	var tokens []token.Token
 	tok := lex.Lex()
@@ -75,9 +77,9 @@ func main() {
 	if opts.Debug {
 		pretty.Println(tree)
 		fmt.Println()
-	}
-	for _, stmt := range tree {
-		fmt.Println(stmt)
+		for _, stmt := range tree {
+			fmt.Println(stmt)
+		}
 	}
 
 	astparser := parser.NewAstParser(tree)
@@ -90,17 +92,19 @@ func main() {
 	evaluator := eval.NewEvaluator(asttree)
 	err = evaluator.Evaluate(&evaluator.BaseEnv)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
 	// pretty.Println(evaluator.BaseEnv)
-
-	fmt.Println("types:\n=======")
-	for id, ty := range evaluator.BaseEnv.Types {
-		fmt.Printf("%s = %s\n", id, ty.String())
-	}
-	fmt.Println()
-	fmt.Println("vars:\n=======")
-	for id, val := range evaluator.BaseEnv.Variables {
-		fmt.Printf("%s %s = %v\n", id, val.TypeName(), val)
+	if opts.Debug {
+		fmt.Println("types:\n=======")
+		for id, ty := range evaluator.BaseEnv.Types {
+			fmt.Printf("%s = %s\n", id, ty.String())
+		}
+		fmt.Println()
+		fmt.Println("vars:\n=======")
+		for id, val := range evaluator.BaseEnv.Variables {
+			fmt.Printf("%s %s = %v\n", id, val.TypeName(), val)
+		}
 	}
 }

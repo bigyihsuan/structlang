@@ -7,6 +7,7 @@ import (
 	"github.com/bigyihsuan/structlang/token"
 	"github.com/bigyihsuan/structlang/trees/parsetree"
 	"github.com/bigyihsuan/structlang/trees/precedence"
+	"github.com/bigyihsuan/structlang/util"
 )
 
 type PrefixParselet interface {
@@ -81,3 +82,46 @@ func (bop BinaryOperator) Parse(parser *ParseTreeParser, left parsetree.Expr, op
 func (bop BinaryOperator) Precedence() precedence.Precedence {
 	return bop.prec
 }
+
+type CallParselet struct{}
+
+func (cp CallParselet) Parse(parser *ParseTreeParser, expr parsetree.Expr, lparen token.Token) (parsetree.Expr, error) {
+	args := parsetree.SeparatedList[parsetree.Expr, token.Token]{}
+	funcName, isLvalue := expr.(parsetree.Lvalue)
+	if !isLvalue {
+		return expr, errors.New("expected lvalue for function call")
+	}
+
+	if hasRparen, err := parser.nextTokenIs(token.RPAREN); err != nil {
+		return funcName, err
+	} else if !hasRparen {
+		for {
+			if finishFuncCall, err := parser.nextTokenIs(token.RPAREN); err != nil {
+				return funcName, err
+			} else if finishFuncCall {
+				break
+			}
+			arg, err := parser.Expr(precedence.BOTTOM)
+			if err != nil {
+				return arg, err
+			}
+			if finishFuncCall, err := parser.nextTokenIs(token.RPAREN); err != nil {
+				return funcName, err
+			} else if finishFuncCall {
+				args = append(args, util.Pair[parsetree.Expr, *token.Token]{First: arg, Last: nil})
+				break
+			}
+			comma, err := parser.expectGet(token.COMMA)
+			if err != nil {
+				return arg, err
+			}
+			args = append(args, util.Pair[parsetree.Expr, *token.Token]{First: arg, Last: comma})
+		}
+	}
+	rparen, err := parser.expectGet(token.RPAREN)
+	if err != nil {
+		return funcName, err
+	}
+	return parsetree.FuncCallExpr{Name: funcName, Lparen: lparen, Args: args, Rparen: *rparen}, nil
+}
+func (cp CallParselet) Precedence() precedence.Precedence { return precedence.CALL }

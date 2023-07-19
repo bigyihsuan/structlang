@@ -15,6 +15,15 @@ type Expr interface {
 	exprTag()
 }
 
+type ExprStmt struct {
+	Expr Expr
+	Tokens
+}
+
+func (es ExprStmt) stmtTag()               {}
+func (es ExprStmt) FirstTok() *token.Token { return es.FirstToken }
+func (es ExprStmt) LastTok() *token.Token  { return es.LastToken }
+
 type Tokens struct {
 	FirstToken, LastToken *token.Token
 }
@@ -159,3 +168,13 @@ type GroupingExpr struct {
 func (ge GroupingExpr) exprTag()               {}
 func (ge GroupingExpr) FirstTok() *token.Token { return ge.FirstToken }
 func (ge GroupingExpr) LastTok() *token.Token  { return ge.LastToken }
+
+type FuncCallExpr struct {
+	Name Lvalue
+	Args []Expr
+	Tokens
+}
+
+func (fce FuncCallExpr) exprTag()               {}
+func (fce FuncCallExpr) FirstTok() *token.Token { return fce.FirstToken }
+func (fce FuncCallExpr) LastTok() *token.Token  { return fce.LastToken }

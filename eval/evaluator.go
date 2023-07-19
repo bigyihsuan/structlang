@@ -21,9 +21,14 @@ func NewEvaluator(code []ast.Stmt) Evaluator {
 	return e
 }
 
-func (e *Evaluator) Evaluate(currEnv *Env) error {
+func (e *Evaluator) Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error {
 	var errs error
-	for _, stmt := range e.Code {
+	code := e.Code
+	if len(stmts) > 0 {
+		code = stmts[0]
+	}
+
+	for _, stmt := range code {
 		var err error = nil
 		switch stmt := stmt.(type) {
 		case ast.TypeDef:
@@ -32,13 +37,14 @@ func (e *Evaluator) Evaluate(currEnv *Env) error {
 			err = e.VarDef(currEnv, stmt)
 		case ast.VarSet:
 			err = e.VarSet(currEnv, stmt)
+		case ast.ExprStmt:
+			_, err = e.Expr(currEnv, stmt.Expr)
 		default:
-			fmt.Printf("unknown stmt: %T\n", stmt)
+			fmt.Printf("eval unknown stmt: %T\n", stmt)
 		}
 		if err != nil {
 			errs = errors.Join(errs, err)
 		}
-
 	}
 	return errs
 }
@@ -51,7 +57,7 @@ func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
 	return nil
 }
 
-func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (st StructType, err error) {
+func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (st Type, err error) {
 	st.Fields = make(map[string]TypeName)
 	st.Vars = make([]TypeName, len(structDef.Vars))
 
@@ -126,7 +132,7 @@ func (e *Evaluator) Lvalue(currEnv *Env, lvalue ast.Lvalue) (Identifier, error) 
 		ident := base.NewAccess(lvalue.Field)
 		return ident, nil
 	default:
-		fmt.Printf("unknown lvalue: %T\n", lvalue)
+		fmt.Printf("eval unknown lvalue: %T\n", lvalue)
 	}
 	return Identifier{}, fmt.Errorf("unkown lvalue: %v", lvalue)
 }
@@ -155,8 +161,10 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		return e.InfixExpr(currEnv, expr)
 	case ast.GroupingExpr:
 		return e.GroupingExpr(currEnv, expr)
+	case ast.FuncCallExpr:
+		return e.FuncCallExpr(currEnv, expr)
 	default:
-		fmt.Printf("unknown expr: %T\n", expr)
+		fmt.Printf("eval unknown expr: %T\n", expr)
 	}
 	return v, nil
 }
@@ -177,7 +185,7 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	case token.NIL:
 		return NewNil(), nil
 	default:
-		return v, fmt.Errorf("unknown literal %s", expr.Token.Type().String())
+		return v, fmt.Errorf("eval unknown literal %s", expr.Token.Type().String())
 	}
 }
 
@@ -237,7 +245,7 @@ func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value
 		}
 		fields[name] = value
 	}
-	sv := NewStructValueFromType(structTemplate, typeParams, fields, typename)
+	sv := NewStructFromType(structTemplate, typeParams, fields, typename)
 
 	return sv, nil
 }
@@ -350,4 +358,26 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 
 func (e *Evaluator) GroupingExpr(currEnv *Env, expr ast.GroupingExpr) (v Value, err error) {
 	return e.Expr(currEnv, expr.Expr)
+}
+
+func (e *Evaluator) FuncCallExpr(currEnv *Env, expr ast.FuncCallExpr) (v Value, err error) {
+	args := []Value{}
+	for _, a := range expr.Args {
+		arg, err := e.Expr(currEnv, a)
+		if err != nil {
+			return arg, err
+		}
+		args = append(args, arg)
+	}
+	name, err := e.Lvalue(currEnv, expr.Name)
+	if err != nil {
+		return v, err
+	}
+	if fn, isBuiltin := BuiltinFuncs()[name.Name]; isBuiltin {
+		fn(args...)
+	} else {
+		fmt.Printf("eval: attempting to call func `%s` on `%v`", name.Name, args)
+	}
+
+	return v, err
 }

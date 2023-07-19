@@ -4,21 +4,25 @@ import "fmt"
 
 type Primitive struct {
 	v any
-	StructValue
+	Struct
 }
 
 func NewPrimitive(v any) Primitive {
-	sv := StructValue{Fields: make(map[string]Value)}
-	return Primitive{v: v, StructValue: sv}
+	sv := Struct{Fields: make(map[string]Value)}
+	return Primitive{v: v, Struct: sv}
 }
 
 var nilValue = func() (p Primitive) {
-	sv := StructValue{Fields: make(map[string]Value)}
+	sv := Struct{Fields: make(map[string]Value)}
 	sv.Fields["name"] = NewPrimitive("nil")
 	sv.Fields["len"] = NewPrimitive(0)
 	p.v = nil
 	return
 }()
+
+func (p Primitive) printString() string {
+	return fmt.Sprintf("%v", p.v)
+}
 
 func NewNil() (p Primitive) {
 	return nilValue
@@ -64,7 +68,7 @@ func (p Primitive) Get(field string) Value {
 			return NewPrimitive(0)
 		}
 	}
-	return p.StructValue.Get(field)
+	return p.Struct.Get(field)
 }
 
 func (p Primitive) TypeName() TypeName {
