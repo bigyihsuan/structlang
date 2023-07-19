@@ -1,10 +1,5 @@
 package eval
 
-import (
-	"fmt"
-	"strings"
-)
-
 type Value interface {
 	Get(field string) Value
 	TypeName() TypeName
@@ -41,12 +36,9 @@ func NewStructValueFromType(st StructType, typeParams map[string]TypeName, field
 func (sv StructValue) Get(field string) Value {
 	return sv.Fields[field]
 }
+
 func (sv StructValue) TypeName() TypeName {
-	fields := []string{}
-	for name, field := range sv.Fields {
-		fields = append(fields, fmt.Sprintf("%s %s", name, field.TypeName().Name))
-	}
-	return TypeName{Name: fmt.Sprintf("%s{%s}", sv.Name, strings.Join(fields, "; "))}
+	return TypeName{Name: sv.Name}
 }
 func (sv StructValue) Unwrap() any {
 	// TODO: what is this unwrapped?

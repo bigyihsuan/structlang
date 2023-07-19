@@ -471,17 +471,6 @@ func (p *ParseTreeParser) Expr(precedence precedence.Precedence) (expr parsetree
 		}
 	}
 	return expr, nil
-
-	// switch tt := tok.Type(); {
-	// case token.IsLiteral(tt):
-	// 	expr, err = p.Literal()
-	// case tt == token.IDENT:
-	// 	expr, err = p.IdentOrStructLiteralOrFieldAccess()
-	// }
-	// if err != nil {
-	// 	return expr, errors.Join(exprerr, err)
-	// }
-	// return nil, errors.Join(exprerr, fmt.Errorf("unknown token for expr: type=`%s` lexeme=`%s`", tok.Type(), tok.Lexeme()))
 }
 
 func (p *ParseTreeParser) Literal() (expr parsetree.Literal, err error) {
