@@ -125,6 +125,8 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 		return a.PrefixExpr(expr)
 	case parsetree.InfixExpr:
 		return a.InfixExpr(expr)
+	case parsetree.GroupingExpr:
+		return a.GroupingExpr(expr)
 	default:
 		fmt.Printf("unknown expr %T\n", expr)
 	}
@@ -271,6 +273,16 @@ func (a AstParser) InfixExpr(expr parsetree.InfixExpr) ast.Expr {
 		Tokens: ast.Tokens{
 			FirstToken: left.FirstTok(),
 			LastToken:  right.FirstTok(),
+		},
+	}
+}
+
+func (a AstParser) GroupingExpr(expr parsetree.GroupingExpr) ast.Expr {
+	return ast.GroupingExpr{
+		Expr: a.Expr(expr.Expr),
+		Tokens: ast.Tokens{
+			FirstToken: &expr.Lparen,
+			LastToken:  &expr.Rparen,
 		},
 	}
 }

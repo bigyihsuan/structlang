@@ -153,10 +153,11 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		return e.PrefixExpr(currEnv, expr)
 	case ast.InfixExpr:
 		return e.InfixExpr(currEnv, expr)
+	case ast.GroupingExpr:
+		return e.GroupingExpr(currEnv, expr)
 	default:
 		fmt.Printf("unknown expr: %T\n", expr)
 	}
-
 	return v, nil
 }
 
@@ -345,4 +346,8 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 	}
 
 	return v, fmt.Errorf("invalid types `%T` and `%T` for infix op `%s`", left, right, expr.Op.Type())
+}
+
+func (e *Evaluator) GroupingExpr(currEnv *Env, expr ast.GroupingExpr) (v Value, err error) {
+	return e.Expr(currEnv, expr.Expr)
 }

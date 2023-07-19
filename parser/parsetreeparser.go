@@ -41,6 +41,7 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 		registerPrefix(prefixOps, primitive, LiteralParselet{})
 	}
 	registerPrefix(prefixOps, token.IDENT, IdentParselet{})
+	registerPrefix(prefixOps, token.LPAREN, GroupingParselet{})
 
 	return ParseTreeParser{
 		tokens:    tokens,

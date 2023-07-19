@@ -150,3 +150,12 @@ type InfixExpr struct {
 func (ie InfixExpr) exprTag()               {}
 func (ie InfixExpr) FirstTok() *token.Token { return ie.FirstToken }
 func (ie InfixExpr) LastTok() *token.Token  { return ie.LastToken }
+
+type GroupingExpr struct {
+	Expr Expr
+	Tokens
+}
+
+func (ge GroupingExpr) exprTag()               {}
+func (ge GroupingExpr) FirstTok() *token.Token { return ge.FirstToken }
+func (ge GroupingExpr) LastTok() *token.Token  { return ge.LastToken }

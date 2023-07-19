@@ -182,3 +182,14 @@ func (ie InfixExpr) exprTag() {}
 func (ie InfixExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", ie.Op.Lexeme(), ie.Left, ie.Right)
 }
+
+type GroupingExpr struct {
+	Lparen token.Token
+	Expr   Expr
+	Rparen token.Token
+}
+
+func (ge GroupingExpr) exprTag() {}
+func (ge GroupingExpr) String() string {
+	return fmt.Sprintf("(%s)", ge.Expr)
+}

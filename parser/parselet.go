@@ -19,13 +19,13 @@ type InfixParselet interface {
 
 type LiteralParselet struct{}
 
-func (lp LiteralParselet) Parse(parser *ParseTreeParser, token token.Token) (parsetree.Expr, error) {
-	return parsetree.Literal{Token: token}, nil
+func (lp LiteralParselet) Parse(parser *ParseTreeParser, tok token.Token) (parsetree.Expr, error) {
+	return parsetree.Literal{Token: tok}, nil
 }
 
 type IdentParselet struct{}
 
-func (ip IdentParselet) Parse(parser *ParseTreeParser, token token.Token) (parsetree.Expr, error) {
+func (ip IdentParselet) Parse(parser *ParseTreeParser, tok token.Token) (parsetree.Expr, error) {
 	parser.putBackToken()
 	return parser.IdentOrStructLiteralOrFieldAccess()
 }
@@ -44,6 +44,20 @@ func (pop PrefixOperator) Parse(parser *ParseTreeParser, op token.Token) (parset
 }
 func (pop PrefixOperator) Precedence() precedence.Precedence {
 	return pop.prec
+}
+
+type GroupingParselet struct{}
+
+func (gp GroupingParselet) Parse(parser *ParseTreeParser, lparen token.Token) (parsetree.Expr, error) {
+	expr, err := parser.Expr(precedence.BOTTOM)
+	if err != nil {
+		return expr, err
+	}
+	rparen, err := parser.expectGet(token.RPAREN)
+	if err != nil {
+		return expr, err
+	}
+	return parsetree.GroupingExpr{Lparen: lparen, Expr: expr, Rparen: *rparen}, nil
 }
 
 type BinaryOperator struct {
