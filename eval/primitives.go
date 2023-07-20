@@ -1,6 +1,8 @@
 package eval
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Primitive struct {
 	v any
@@ -20,7 +22,7 @@ var nilValue = func() (p Primitive) {
 	return
 }()
 
-func (p Primitive) printString() string {
+func (p Primitive) PrintString() string {
 	return fmt.Sprintf("%v", p.v)
 }
 

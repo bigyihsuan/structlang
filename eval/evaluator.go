@@ -233,17 +233,17 @@ func (e *Evaluator) StructLiteral(currEnv *Env, expr ast.StructLiteral) (v Value
 	fields := make(map[string]Value)
 	for _, field := range expr.Fields {
 		name := field.Name.Name
-		value, err := e.Expr(currEnv, field.Value)
+		val, err := e.Expr(currEnv, field.Value)
 		if err != nil {
 			return v, err
 		}
 		expFieldType, ok := structTemplate.Fields[name]
 		if !ok {
 			return v, fmt.Errorf("field `%s` not found in type `%s`", name, typename)
-		} else if valType := value.TypeName().Name; valType != expFieldType.Name {
+		} else if valType := val.TypeName().Name; valType != expFieldType.Name {
 			return v, fmt.Errorf("unexpected type for field `%s`: got `%s`, want `%s`", name, valType, expFieldType.Name)
 		}
-		fields[name] = value
+		fields[name] = val
 	}
 	sv := NewStructFromType(structTemplate, typeParams, fields, typename)
 
@@ -373,11 +373,16 @@ func (e *Evaluator) FuncCallExpr(currEnv *Env, expr ast.FuncCallExpr) (v Value, 
 	if err != nil {
 		return v, err
 	}
+
+	// TODO: return vals
+	var returnValue Value
+	// TODO: call user-defined functions in current env
 	if fn, isBuiltin := BuiltinFuncs()[name.Name]; isBuiltin {
-		fn(args...)
+		returnValue = fn(args...)
+	} else if fn := currEnv.GetVariable(name.String()); fn == nil {
+		return v, fmt.Errorf("function `%s` not found", name.String())
 	} else {
 		fmt.Printf("eval: attempting to call func `%s` on `%v`", name.Name, args)
 	}
-
-	return v, err
+	return returnValue, err
 }

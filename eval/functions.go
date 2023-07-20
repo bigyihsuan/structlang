@@ -13,11 +13,11 @@ type Func struct {
 	Args   []util.Pair[string, TypeName] // function arguments; oredered map of variable names to their types
 	Return TypeName                      // the return type of this function
 	Body   []ast.Stmt                    // the actual code of the function
-	Env    Env                           // the env the parameter variables live in
+	Env    *Env                          // the env the parameter variables live in
 }
 
 func (f Func) Get(field string) Value {
-	return nilValue
+	return NewNil()
 }
 func (f Func) TypeName() TypeName {
 	args := make([]string, len(f.Args))
@@ -27,10 +27,10 @@ func (f Func) TypeName() TypeName {
 	return TypeName{Name: fmt.Sprintf("func(%s)%s", strings.Join(args, ", "), f.Return.Name)}
 }
 func (f Func) Unwrap() any {
-	return nilValue
+	return NewNil()
 }
 
-func (f Func) Call(evaluator Evaluator, args ...Value) Value {
+func (f Func) Call(evaluator Eval, args ...Value) Value {
 	if len(args) != len(f.Args) {
 		// TODO: better runtime error handling
 		panic(fmt.Sprintf("incorrect numbers of arguments for func %s: got %d, want %d", f.Name, len(args), len(f.Args)))
@@ -45,7 +45,7 @@ func (f Func) Call(evaluator Evaluator, args ...Value) Value {
 	}
 
 	// TODO: return values
-	evaluator.Evaluate(&f.Env, f.Body)
+	evaluator.Evaluate(f.Env, f.Body)
 
-	return nilValue
+	return NewNil()
 }

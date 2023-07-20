@@ -1,5 +1,9 @@
 package eval
 
+import (
+	"github.com/bigyihsuan/structlang/trees/ast"
+)
+
 type Neg interface {
 	Value
 	Pos() Value
@@ -36,5 +40,9 @@ type Log interface {
 
 type Call interface {
 	Value
-	Call(evaluator Evaluator, args ...Value) Value
+	Call(evaluator Eval, args ...Value) Value
+}
+
+type Eval interface {
+	Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error
 }

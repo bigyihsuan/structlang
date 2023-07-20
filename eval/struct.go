@@ -43,10 +43,10 @@ func (sv Struct) Unwrap() any {
 	// TODO: what is this unwrapped?
 	return sv.Fields
 }
-func (sv Struct) printString() string {
+func (sv Struct) PrintString() string {
 	fields := []string{}
 	for name, value := range sv.Fields {
-		fields = append(fields, name+":"+value.printString())
+		fields = append(fields, name+":"+value.PrintString())
 	}
 	fieldStr := ""
 	if len(fields) > 0 {
