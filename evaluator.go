@@ -1,10 +1,12 @@
-package eval
+package main
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
 
+	. "github.com/bigyihsuan/structlang/eval"
+	"github.com/bigyihsuan/structlang/eval/builtin"
 	"github.com/bigyihsuan/structlang/token"
 	"github.com/bigyihsuan/structlang/trees/ast"
 )
@@ -173,17 +175,17 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	switch expr.Token.Type() {
 	case token.INT:
 		v, err := strconv.Atoi(expr.Token.Lexeme())
-		return NewInt(v), err
+		return builtin.NewInt(v), err
 	case token.FLOAT:
 		v, err := strconv.ParseFloat(expr.Token.Lexeme(), 64)
-		return NewFloat(v), err
+		return builtin.NewFloat(v), err
 	case token.TRUE, token.FALSE:
 		v, err := strconv.ParseBool(expr.Token.Lexeme())
-		return NewBool(v), err
+		return builtin.NewBool(v), err
 	case token.STRING:
-		return NewString(expr.Token.Lexeme()), nil
+		return builtin.NewString(expr.Token.Lexeme()), nil
 	case token.NIL:
-		return NewNil(), nil
+		return builtin.NewNil(), nil
 	default:
 		return v, fmt.Errorf("eval unknown literal %s", expr.Token.Type().String())
 	}
@@ -377,7 +379,7 @@ func (e *Evaluator) FuncCallExpr(currEnv *Env, expr ast.FuncCallExpr) (v Value, 
 	// TODO: return vals
 	var returnValue Value
 	// TODO: call user-defined functions in current env
-	if fn, isBuiltin := BuiltinFuncs()[name.Name]; isBuiltin {
+	if fn, isBuiltin := builtin.BuiltinFuncs()[name.Name]; isBuiltin {
 		returnValue = fn(args...)
 	} else if fn := currEnv.GetVariable(name.String()); fn == nil {
 		return v, fmt.Errorf("function `%s` not found", name.String())

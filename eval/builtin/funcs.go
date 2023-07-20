@@ -1,7 +1,9 @@
-package eval
+package builtin
 
 import (
 	"fmt"
+
+	. "github.com/bigyihsuan/structlang/eval"
 )
 
 var builtinFuncs = map[string]func(vs ...Value) Value{

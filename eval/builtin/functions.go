@@ -1,9 +1,10 @@
-package eval
+package builtin
 
 import (
 	"fmt"
 	"strings"
 
+	. "github.com/bigyihsuan/structlang/eval"
 	"github.com/bigyihsuan/structlang/trees/ast"
 	"github.com/bigyihsuan/structlang/util"
 )

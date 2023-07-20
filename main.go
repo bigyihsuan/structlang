@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bigyihsuan/structlang/eval"
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
@@ -89,7 +88,7 @@ func main() {
 		fmt.Println()
 	}
 
-	evaluator := eval.NewEvaluator(asttree)
+	evaluator := NewEvaluator(asttree)
 	err = evaluator.Evaluate(&evaluator.BaseEnv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

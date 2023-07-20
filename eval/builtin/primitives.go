@@ -1,7 +1,9 @@
-package eval
+package builtin
 
 import (
 	"fmt"
+
+	. "github.com/bigyihsuan/structlang/eval"
 )
 
 type Primitive struct {
