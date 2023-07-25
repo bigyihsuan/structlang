@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bigyihsuan/structlang/eval"
 	"github.com/bigyihsuan/structlang/lexer"
 	"github.com/bigyihsuan/structlang/parser"
 	"github.com/bigyihsuan/structlang/token"
@@ -69,16 +70,16 @@ func main() {
 
 	p := parser.NewParser(tokens)
 	tree, errs := p.Parse()
-	if errs != nil {
-		fmt.Fprintln(os.Stderr, errs)
-		return
-	}
 	if opts.Debug {
 		pretty.Println(tree)
 		fmt.Println()
 		for _, stmt := range tree {
 			fmt.Println(stmt)
 		}
+	}
+	if errs != nil {
+		fmt.Fprintln(os.Stderr, errs)
+		return
 	}
 
 	astparser := parser.NewAstParser(tree)
@@ -88,7 +89,7 @@ func main() {
 		fmt.Println()
 	}
 
-	evaluator := NewEvaluator(asttree)
+	evaluator := eval.NewEvaluator(asttree)
 	err = evaluator.Evaluate(&evaluator.BaseEnv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

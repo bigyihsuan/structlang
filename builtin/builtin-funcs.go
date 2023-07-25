@@ -3,7 +3,7 @@ package builtin
 import (
 	"fmt"
 
-	. "github.com/bigyihsuan/structlang/eval"
+	. "github.com/bigyihsuan/structlang/value"
 )
 
 var builtinFuncs = map[string]func(vs ...Value) Value{

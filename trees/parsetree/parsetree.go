@@ -25,7 +25,7 @@ type ExprStmt struct {
 }
 
 func (es ExprStmt) stmtTag()       {}
-func (es ExprStmt) String() string { return fmt.Sprintf("(%s ;)", es.Expr) }
+func (es ExprStmt) String() string { return fmt.Sprintf("((%s) ;)", es.Expr) }
 
 type VarDef struct {
 	LetKw  token.Token
@@ -74,7 +74,7 @@ type StructLiteral struct {
 func (sl StructLiteral) exprTag()   {}
 func (sl StructLiteral) lvalueTag() {}
 func (sl StructLiteral) String() string {
-	fields := make([]string, len(sl.Fields))
+	fields := []string{}
 	for _, pair := range sl.Fields {
 		field := pair.First
 		fields = append(fields, field.String())
@@ -137,7 +137,7 @@ type TypeVars struct {
 }
 
 func (tv TypeVars) String() string {
-	types := make([]string, len(tv.TypeVars))
+	types := []string{}
 	for _, pair := range tv.TypeVars {
 		ty := pair.First
 		types = append(types, ty.String())
@@ -154,11 +154,11 @@ type StructDef struct {
 }
 
 func (sd StructDef) String() string {
-	fields := make([]string, len(sd.Fields))
+	fields := []string{}
 	for _, field := range sd.Fields {
 		fields = append(fields, field.String())
 	}
-	return fmt.Sprintf("(struct%s{%s})", sd.TypeVars, strings.Join(fields, " "))
+	return fmt.Sprintf("(struct %s {%s})", sd.TypeVars, strings.Join(fields, " "))
 }
 
 type StructField struct {
@@ -168,7 +168,7 @@ type StructField struct {
 }
 
 func (sf StructField) String() string {
-	names := make([]string, len(sf.Names))
+	names := []string{}
 	for _, pair := range sf.Names {
 		name := pair.First
 		names = append(names, name.String())
@@ -217,10 +217,43 @@ type FuncCallExpr struct {
 
 func (fce FuncCallExpr) exprTag() {}
 func (fce FuncCallExpr) String() string {
-	args := make([]string, len(fce.Args))
+	args := []string{}
 	for _, pair := range fce.Args {
 		arg := pair.First
 		args = append(args, arg.String())
 	}
 	return fmt.Sprintf("(%s (%s))", fce.Name, strings.Join(args, " "))
+}
+
+type FuncDef struct {
+	FuncKw token.Token
+	Lparen token.Token
+	Args   SeparatedList[FuncArg, token.Token]
+	Rparen token.Token
+	Lbrace token.Token
+	Body   []Stmt
+	Rbrace token.Token
+}
+
+func (fd FuncDef) exprTag() {}
+func (fd FuncDef) String() string {
+	args := []string{}
+	for _, pair := range fd.Args {
+		arg := pair.First
+		args = append(args, arg.String())
+	}
+	body := []string{}
+	for _, stmt := range fd.Body {
+		body = append(body, stmt.String())
+	}
+	return fmt.Sprintf("(func (%s) {%s})", args, body)
+}
+
+type FuncArg struct {
+	Name Ident
+	Type Type
+}
+
+func (fa FuncArg) String() string {
+	return fmt.Sprintf("(%s %s)", fa.Name, fa.Type)
 }

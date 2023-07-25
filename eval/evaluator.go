@@ -1,14 +1,16 @@
-package main
+package eval
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
 
-	. "github.com/bigyihsuan/structlang/eval"
-	"github.com/bigyihsuan/structlang/eval/builtin"
+	"github.com/bigyihsuan/structlang/builtin"
+	. "github.com/bigyihsuan/structlang/env"
 	"github.com/bigyihsuan/structlang/token"
 	"github.com/bigyihsuan/structlang/trees/ast"
+	"github.com/bigyihsuan/structlang/util"
+	. "github.com/bigyihsuan/structlang/value"
 )
 
 type Evaluator struct {
@@ -165,6 +167,8 @@ func (e *Evaluator) Expr(currEnv *Env, expr ast.Expr) (v Value, err error) {
 		return e.GroupingExpr(currEnv, expr)
 	case ast.FuncCallExpr:
 		return e.FuncCallExpr(currEnv, expr)
+	case ast.FuncDef:
+		return e.FuncDef(currEnv, expr)
 	default:
 		fmt.Printf("eval unknown expr: %T\n", expr)
 	}
@@ -277,7 +281,7 @@ func (e *Evaluator) PrefixExpr(currEnv *Env, expr ast.PrefixExpr) (v Value, err 
 		return v, err
 	}
 
-	if neg, isNeg := v.(Neg); isNeg {
+	if neg, isNeg := v.(builtin.Neg); isNeg {
 		switch expr.Op.Type() {
 		case token.PLUS:
 			return neg.Pos(), nil
@@ -285,7 +289,7 @@ func (e *Evaluator) PrefixExpr(currEnv *Env, expr ast.PrefixExpr) (v Value, err 
 			return neg.Neg(), nil
 		}
 	}
-	if log, isLog := v.(Log); isLog {
+	if log, isLog := v.(builtin.Log); isLog {
 		switch expr.Op.Type() {
 		case token.NOT:
 			return log.Not(), nil
@@ -305,8 +309,8 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 		return right, err
 	}
 
-	lsum, isLsum := left.(Sum)
-	rsum, isRsum := right.(Sum)
+	lsum, isLsum := left.(builtin.Sum)
+	rsum, isRsum := right.(builtin.Sum)
 	if isLsum && isRsum {
 		switch expr.Op.Type() {
 		case token.PLUS:
@@ -316,8 +320,8 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 		}
 	}
 
-	lprod, isLprod := left.(Product)
-	rprod, isRprod := right.(Product)
+	lprod, isLprod := left.(builtin.Product)
+	rprod, isRprod := right.(builtin.Product)
 	if isLprod && isRprod {
 		switch expr.Op.Type() {
 		case token.STAR:
@@ -327,8 +331,8 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 		}
 	}
 
-	lcmp, isLcmp := left.(Cmp)
-	rcmp, isRcmp := right.(Cmp)
+	lcmp, isLcmp := left.(builtin.Cmp)
+	rcmp, isRcmp := right.(builtin.Cmp)
 	if isLcmp && isRcmp {
 		switch expr.Op.Type() {
 		case token.GT:
@@ -344,8 +348,8 @@ func (e *Evaluator) InfixExpr(currEnv *Env, expr ast.InfixExpr) (v Value, err er
 		}
 	}
 
-	llog, isLlog := left.(Log)
-	rlog, isRlog := right.(Log)
+	llog, isLlog := left.(builtin.Log)
+	rlog, isRlog := right.(builtin.Log)
 	if isLlog && isRlog {
 		switch expr.Op.Type() {
 		case token.AND:
@@ -378,13 +382,32 @@ func (e *Evaluator) FuncCallExpr(currEnv *Env, expr ast.FuncCallExpr) (v Value, 
 
 	// TODO: return vals
 	var returnValue Value
-	// TODO: call user-defined functions in current env
 	if fn, isBuiltin := builtin.BuiltinFuncs()[name.Name]; isBuiltin {
 		returnValue = fn(args...)
 	} else if fn := currEnv.GetVariable(name.String()); fn == nil {
 		return v, fmt.Errorf("function `%s` not found", name.String())
 	} else {
-		fmt.Printf("eval: attempting to call func `%s` on `%v`", name.Name, args)
+		fmt.Printf("eval: attempting to call func `%s` on `%v`\n", name.Name, args)
+		fn := (*fn).(builtin.Func)
+		returnValue = fn.Call(e, args...)
 	}
 	return returnValue, err
+}
+
+func (e *Evaluator) FuncDef(currEnv *Env, expr ast.FuncDef) (v Value, err error) {
+	args := []util.Pair[string, TypeName]{}
+	for _, arg := range expr.Args {
+		name := arg.Name.Name
+		ty, err := e.TypeName(currEnv, arg.Type)
+		if err != nil {
+			return v, err
+		}
+		args = append(args, util.Pair[string, TypeName]{First: name, Last: ty})
+	}
+	body := expr.Body
+	return builtin.Func{
+		Args: args,
+		Body: body,
+		Env:  currEnv,
+	}, err
 }

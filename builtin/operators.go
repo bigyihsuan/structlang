@@ -1,7 +1,9 @@
-package eval
+package builtin
 
 import (
+	"github.com/bigyihsuan/structlang/env"
 	"github.com/bigyihsuan/structlang/trees/ast"
+	. "github.com/bigyihsuan/structlang/value"
 )
 
 type Neg interface {
@@ -44,5 +46,5 @@ type Call interface {
 }
 
 type Eval interface {
-	Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error
+	Evaluate(currEnv *env.Env, stmts ...[]ast.Stmt) error
 }

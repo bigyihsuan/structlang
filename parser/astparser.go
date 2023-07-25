@@ -132,6 +132,8 @@ func (a AstParser) Expr(expr parsetree.Expr) (e ast.Expr) {
 		return a.GroupingExpr(expr)
 	case parsetree.FuncCallExpr:
 		return a.FuncCallExpr(expr)
+	case parsetree.FuncDef:
+		return a.FuncDef(expr)
 	default:
 		fmt.Printf("ast unknown expr %T\n", expr)
 	}
@@ -309,6 +311,32 @@ func (a AstParser) FuncCallExpr(expr parsetree.FuncCallExpr) ast.Expr {
 		Tokens: ast.Tokens{
 			FirstToken: name.FirstTok(),
 			LastToken:  lastTok,
+		},
+	}
+}
+
+func (a AstParser) FuncDef(expr parsetree.FuncDef) ast.Expr {
+	args := []ast.FuncArg{}
+	for _, arg := range expr.Args {
+		argName := a.Ident(arg.First.Name)
+		argType := a.Type(arg.First.Type)
+		args = append(args, ast.FuncArg{
+			Name: argName,
+			Type: argType,
+		})
+	}
+
+	body := []ast.Stmt{}
+	for _, stmt := range expr.Body {
+		body = append(body, a.Stmt(stmt))
+	}
+
+	return ast.FuncDef{
+		Args: args,
+		Body: body,
+		Tokens: ast.Tokens{
+			FirstToken: &expr.FuncKw,
+			LastToken:  &expr.Rbrace,
 		},
 	}
 }

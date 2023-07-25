@@ -1,7 +1,9 @@
-package eval
+package env
 
 import (
 	"fmt"
+
+	. "github.com/bigyihsuan/structlang/value"
 )
 
 type Env struct {

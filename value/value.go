@@ -1,4 +1,4 @@
-package eval
+package value
 
 type Value interface {
 	Get(field string) Value

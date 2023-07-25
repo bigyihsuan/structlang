@@ -2,8 +2,9 @@ package builtin
 
 import (
 	"fmt"
+	"strings"
 
-	. "github.com/bigyihsuan/structlang/eval"
+	. "github.com/bigyihsuan/structlang/value"
 )
 
 type Primitive struct {
@@ -40,38 +41,6 @@ func (p Primitive) Get(field string) Value {
 	if field == "v" {
 		return p
 	}
-	switch v := p.v.(type) {
-	case int:
-		if field == "name" {
-			return NewPrimitive("int")
-		} else if field == "len" {
-			return NewPrimitive(0)
-		}
-	case float64:
-		if field == "name" {
-			return NewPrimitive("float")
-		} else if field == "len" {
-			return NewPrimitive(0)
-		}
-	case bool:
-		if field == "name" {
-			return NewPrimitive("bool")
-		} else if field == "len" {
-			return NewPrimitive(0)
-		}
-	case string:
-		if field == "name" {
-			return NewPrimitive("string")
-		} else if field == "len" {
-			return NewPrimitive(len(v))
-		}
-	case nil:
-		if field == "name" {
-			return NewPrimitive("nil")
-		} else if field == "len" {
-			return NewPrimitive(0)
-		}
-	}
 	return p.Struct.Get(field)
 }
 
@@ -101,6 +70,19 @@ type IntValue struct {
 
 func NewInt(v int) IntValue {
 	return IntValue{NewPrimitive(v)}
+}
+
+func (v IntValue) Get(field string) Value {
+	switch field {
+	case "v":
+		return v
+	case "name":
+		return NewString("int")
+	case "len":
+		return NewInt(0)
+	default:
+		return v.Struct.Get(field)
+	}
 }
 
 func (iv IntValue) Pos() Value {
@@ -157,6 +139,19 @@ func NewFloat(v float64) FloatValue {
 	return FloatValue{NewPrimitive(v)}
 }
 
+func (v FloatValue) Get(field string) Value {
+	switch field {
+	case "v":
+		return v
+	case "name":
+		return NewString("float")
+	case "len":
+		return NewInt(0)
+	default:
+		return v.Struct.Get(field)
+	}
+}
+
 func (iv FloatValue) Pos() Value {
 	iv.v = +iv.v.(float64)
 	return iv
@@ -183,20 +178,20 @@ func (fv FloatValue) Div(other Product) Value {
 	return fv
 }
 
-func (iv FloatValue) Gt(other Cmp) Value {
-	return NewBool(iv.Unwrap().(float64) > other.Unwrap().(float64))
+func (fv FloatValue) Gt(other Cmp) Value {
+	return NewBool(fv.Unwrap().(float64) > other.Unwrap().(float64))
 }
-func (iv FloatValue) Lt(other Cmp) Value {
-	return NewBool(iv.Unwrap().(float64) < other.Unwrap().(float64))
+func (fv FloatValue) Lt(other Cmp) Value {
+	return NewBool(fv.Unwrap().(float64) < other.Unwrap().(float64))
 }
-func (iv FloatValue) GtEq(other Cmp) Value {
-	return NewBool(iv.Unwrap().(float64) >= other.Unwrap().(float64))
+func (fv FloatValue) GtEq(other Cmp) Value {
+	return NewBool(fv.Unwrap().(float64) >= other.Unwrap().(float64))
 }
-func (iv FloatValue) LtEq(other Cmp) Value {
-	return NewBool(iv.Unwrap().(float64) <= other.Unwrap().(float64))
+func (fv FloatValue) LtEq(other Cmp) Value {
+	return NewBool(fv.Unwrap().(float64) <= other.Unwrap().(float64))
 }
-func (iv FloatValue) Eq(other Cmp) Value {
-	return NewBool(iv.Unwrap().(float64) == other.Unwrap().(float64))
+func (fv FloatValue) Eq(other Cmp) Value {
+	return NewBool(fv.Unwrap().(float64) == other.Unwrap().(float64))
 }
 
 type BoolValue struct {
@@ -205,6 +200,19 @@ type BoolValue struct {
 
 func NewBool(v bool) BoolValue {
 	return BoolValue{NewPrimitive(v)}
+}
+
+func (v BoolValue) Get(field string) Value {
+	switch field {
+	case "v":
+		return v
+	case "name":
+		return NewString("bool")
+	case "len":
+		return NewInt(0)
+	default:
+		return v.Struct.Get(field)
+	}
 }
 
 func (bv BoolValue) Not() Value {
@@ -223,6 +231,26 @@ type StringValue struct {
 
 func NewString(v string) StringValue {
 	return StringValue{NewPrimitive(v)}
+}
+
+func (v StringValue) Get(field string) Value {
+	switch field {
+	case "v":
+		return v
+	case "name":
+		return NewString("string")
+	case "len":
+		return NewInt(len([]rune(v.Unwrap().(string))))
+	default:
+		return v.Struct.Get(field)
+	}
+}
+
+func (sv StringValue) Add(other Sum) Value {
+	return NewString(sv.Unwrap().(string) + other.Unwrap().(string))
+}
+func (sv StringValue) Sub(other Sum) Value {
+	return NewString(strings.ReplaceAll(sv.Unwrap().(string), other.Unwrap().(string), ""))
 }
 
 func (sv StringValue) Gt(other Cmp) Value {

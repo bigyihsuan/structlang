@@ -125,3 +125,77 @@ func (cp CallParselet) Parse(parser *ParseTreeParser, expr parsetree.Expr, lpare
 	return parsetree.FuncCallExpr{Name: funcName, Lparen: lparen, Args: args, Rparen: *rparen}, nil
 }
 func (cp CallParselet) Precedence() precedence.Precedence { return precedence.CALL }
+
+type FuncDefParselet struct{}
+
+func (fdp FuncDefParselet) Parse(parser *ParseTreeParser, op token.Token) (parsetree.Expr, error) {
+	fderr := errors.New("in funcdef")
+	funcKw := op
+	lparen, err := parser.expectGet(token.LPAREN)
+	if err != nil {
+		return nil, errors.Join(fderr, err)
+	}
+	args := parsetree.SeparatedList[parsetree.FuncArg, token.Token]{}
+
+	for {
+		if finishFuncArgs, err := parser.nextTokenIs(token.RPAREN); err != nil {
+			return nil, errors.Join(fderr, err)
+		} else if finishFuncArgs {
+			break
+		}
+		argName, err := parser.Ident()
+		if err != nil {
+			return nil, errors.Join(fderr, err)
+		}
+		argType, err := parser.Type()
+		if err != nil {
+			return nil, errors.Join(fderr, err)
+		}
+		arg := parsetree.FuncArg{Name: argName, Type: argType}
+		if finishFuncArgs, err := parser.nextTokenIs(token.RPAREN); err != nil {
+			return nil, errors.Join(fderr, err)
+		} else if finishFuncArgs {
+			args = append(args, util.Pair[parsetree.FuncArg, *token.Token]{First: arg, Last: nil})
+			break
+		}
+		comma, err := parser.expectGet(token.COMMA)
+		if err != nil {
+			return nil, errors.Join(fderr, err)
+		}
+		args = append(args, util.Pair[parsetree.FuncArg, *token.Token]{First: arg, Last: comma})
+	}
+	rparen, err := parser.expectGet(token.RPAREN)
+	if err != nil {
+		return nil, errors.Join(fderr, err)
+	}
+	lbrace, err := parser.expectGet(token.LBRACE)
+	if err != nil {
+		return nil, errors.Join(fderr, err)
+	}
+	body := []parsetree.Stmt{}
+	for {
+		if finishFuncBody, err := parser.nextTokenIs(token.RBRACE); err != nil {
+			return nil, errors.Join(fderr, err)
+		} else if finishFuncBody {
+			break
+		}
+		stmt, err := parser.Stmt()
+		if err != nil {
+			return nil, errors.Join(fderr, err)
+		}
+		body = append(body, stmt)
+	}
+	rbrace, err := parser.expectGet(token.RBRACE)
+	if err != nil {
+		return nil, errors.Join(fderr, err)
+	}
+	return parsetree.FuncDef{
+		FuncKw: funcKw,
+		Lparen: *lparen,
+		Args:   args,
+		Rparen: *rparen,
+		Lbrace: *lbrace,
+		Body:   body,
+		Rbrace: *rbrace,
+	}, err
+}

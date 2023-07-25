@@ -1,0 +1,6 @@
+let doSomething = func(start string, end int) {
+    print(start, end);
+    println(start + start, end + end);
+};
+
+doSomething("hello", 123);

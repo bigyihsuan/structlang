@@ -43,6 +43,7 @@ func NewParser(tokens []token.Token) ParseTreeParser {
 	registerPrefix(prefixOps, token.IDENT, IdentParselet{})
 	registerPrefix(prefixOps, token.LPAREN, GroupingParselet{})
 	registerInfix(infixOps, token.LPAREN, CallParselet{})
+	registerPrefix(prefixOps, token.FUNC, FuncDefParselet{})
 
 	return ParseTreeParser{
 		tokens:    tokens,
@@ -151,6 +152,11 @@ func (p ParseTreeParser) nextTokenIsAny(tts ...token.TokenType) (bool, error) {
 
 func (p *ParseTreeParser) Parse() (stmts []parsetree.Stmt, errs error) {
 	for p.hasMoreTokens() {
+		if hasRbrace, err := p.nextTokenIs(token.RBRACE); err != nil {
+			return stmts, err
+		} else if hasRbrace {
+			return stmts, nil
+		}
 		s, e := p.Stmt()
 		if e != nil {
 			return stmts, errors.Join(errors.New("in parse tree parser"), e)

@@ -178,3 +178,18 @@ type FuncCallExpr struct {
 func (fce FuncCallExpr) exprTag()               {}
 func (fce FuncCallExpr) FirstTok() *token.Token { return fce.FirstToken }
 func (fce FuncCallExpr) LastTok() *token.Token  { return fce.LastToken }
+
+type FuncDef struct {
+	Args []FuncArg
+	Body []Stmt
+	Tokens
+}
+
+func (fd FuncDef) exprTag()               {}
+func (fd FuncDef) FirstTok() *token.Token { return fd.FirstToken }
+func (fd FuncDef) LastTok() *token.Token  { return fd.LastToken }
+
+type FuncArg struct {
+	Name Ident
+	Type Type
+}

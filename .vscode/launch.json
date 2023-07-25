@@ -11,8 +11,9 @@
             "mode": "debug",
             "program": "${workspaceFolder}",
             "args": [
+                "-d",
                 "-f",
-                "example/print.struct"
+                "example/func-def.struct"
             ]
         }
     ]
