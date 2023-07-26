@@ -11,9 +11,10 @@ import (
 )
 
 type Func struct { // function name
-	Args []util.Pair[string, TypeName] // function arguments; oredered map of variable names to their types
-	Body []ast.Stmt                    // the actual code of the function
-	Env  *env.Env                      // the env the parameter variables live in
+	Args     []util.Pair[string, TypeName] // function arguments; oredered map of variable names to their types
+	Body     []ast.Stmt                    // the actual code of the function
+	Env      *env.Env                      // the env the parameter variables live in
+	IsReturn bool
 }
 
 func (f Func) Get(field string) Value {
@@ -38,8 +39,12 @@ func (f Func) PrintString() string {
 	}
 	return fmt.Sprintf("func(%s)", strings.Join(args, ", "))
 }
+func (f Func) Return(isReturn bool) Value {
+	f.IsReturn = isReturn
+	return f
+}
 
-func (f Func) Call(evaluator Eval, args ...Value) Value {
+func (f Func) Call(evaluator Eval, args ...Value) (Value, error) {
 	if len(args) != len(f.Args) {
 		// TODO: better runtime error handling
 		panic(fmt.Sprintf("incorrect numbers of arguments for func: got %d, want %d", len(args), len(f.Args)))
@@ -54,7 +59,6 @@ func (f Func) Call(evaluator Eval, args ...Value) Value {
 	}
 
 	// TODO: return values
-	evaluator.Evaluate(f.Env, f.Body)
-
-	return NewNil()
+	retVal, err := evaluator.Evaluate(f.Env, f.Body)
+	return retVal, err
 }

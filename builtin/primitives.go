@@ -8,7 +8,8 @@ import (
 )
 
 type Primitive struct {
-	v any
+	v        any
+	IsReturn bool
 	Struct
 }
 
@@ -62,6 +63,11 @@ func (p Primitive) TypeName() TypeName {
 
 func (p Primitive) Unwrap() any {
 	return p.v
+}
+
+func (p Primitive) Return(isReturn bool) Value {
+	p.IsReturn = isReturn
+	return p
 }
 
 type IntValue struct {

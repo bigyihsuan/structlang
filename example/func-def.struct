@@ -1,6 +1,7 @@
-let doSomething = func(start string, end int) {
+let doSomething = func(start string, end int) int {
     print(start, end);
     println(start + start, end + end);
+    return (end + end)*2;
 };
 
-doSomething("hello", 123);
+println(doSomething("hello", 123));

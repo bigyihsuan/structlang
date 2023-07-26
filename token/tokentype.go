@@ -32,6 +32,7 @@ const (
 	OR
 	NOT
 	FUNC
+	RETURN
 	keywords_end
 
 	symbols_begin
@@ -83,6 +84,7 @@ var tokens = [...]string{
 	OR:     "or",
 	NOT:    "not",
 	FUNC:   "func",
+	RETURN: "return",
 
 	LBRACKET:  "[",
 	RBRACKET:  "]",

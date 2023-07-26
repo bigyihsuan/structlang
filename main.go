@@ -90,7 +90,7 @@ func main() {
 	}
 
 	evaluator := eval.NewEvaluator(asttree)
-	err = evaluator.Evaluate(&evaluator.BaseEnv)
+	_, err = evaluator.Evaluate(&evaluator.BaseEnv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return

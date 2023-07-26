@@ -226,13 +226,14 @@ func (fce FuncCallExpr) String() string {
 }
 
 type FuncDef struct {
-	FuncKw token.Token
-	Lparen token.Token
-	Args   SeparatedList[FuncArg, token.Token]
-	Rparen token.Token
-	Lbrace token.Token
-	Body   []Stmt
-	Rbrace token.Token
+	FuncKw     token.Token
+	Lparen     token.Token
+	Args       SeparatedList[FuncArg, token.Token]
+	Rparen     token.Token
+	ReturnType *Type
+	Lbrace     token.Token
+	Body       []Stmt
+	Rbrace     token.Token
 }
 
 func (fd FuncDef) exprTag() {}
@@ -246,7 +247,7 @@ func (fd FuncDef) String() string {
 	for _, stmt := range fd.Body {
 		body = append(body, stmt.String())
 	}
-	return fmt.Sprintf("(func (%s) {%s})", args, body)
+	return fmt.Sprintf("(func (%s) %s {%s})", args, fd.ReturnType, body)
 }
 
 type FuncArg struct {
@@ -256,4 +257,19 @@ type FuncArg struct {
 
 func (fa FuncArg) String() string {
 	return fmt.Sprintf("(%s %s)", fa.Name, fa.Type)
+}
+
+type ReturnStmt struct {
+	ReturnKw token.Token
+	Expr     Expr
+	Sc       token.Token
+}
+
+func (rs ReturnStmt) stmtTag() {}
+func (rs ReturnStmt) String() string {
+	if rs.Expr != nil {
+		return fmt.Sprintf("(return %s ;)", rs.Expr)
+	} else {
+		return "(return ;)"
+	}
 }

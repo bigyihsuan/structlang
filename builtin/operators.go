@@ -46,5 +46,5 @@ type Call interface {
 }
 
 type Eval interface {
-	Evaluate(currEnv *env.Env, stmts ...[]ast.Stmt) error
+	Evaluate(currEnv *env.Env, stmts ...[]ast.Stmt) (Value, error)
 }

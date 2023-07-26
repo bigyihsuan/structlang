@@ -9,6 +9,7 @@ type Struct struct {
 	Name       string
 	TypeParams map[string]TypeName
 	Fields     map[string]Value
+	IsReturn   bool
 }
 
 func NewStruct(fields map[string]Value) (sv Struct) {
@@ -42,6 +43,10 @@ func (sv Struct) TypeName() TypeName {
 func (sv Struct) Unwrap() any {
 	// TODO: what is this unwrapped?
 	return sv.Fields
+}
+func (sv Struct) Return(isReturn bool) Value {
+	sv.IsReturn = isReturn
+	return sv
 }
 func (sv Struct) PrintString() string {
 	fields := []string{}

@@ -168,6 +168,16 @@ func (fdp FuncDefParselet) Parse(parser *ParseTreeParser, op token.Token) (parse
 	if err != nil {
 		return nil, errors.Join(fderr, err)
 	}
+	var returnType *parsetree.Type = nil
+	if hasReturnType, err := parser.nextTokenIsAny(token.IDENT, token.FUNC); err != nil {
+		return nil, errors.Join(fderr, err)
+	} else if hasReturnType {
+		rt, err := parser.Type()
+		if err != nil {
+			return nil, errors.Join(fderr, err)
+		}
+		returnType = &rt
+	}
 	lbrace, err := parser.expectGet(token.LBRACE)
 	if err != nil {
 		return nil, errors.Join(fderr, err)
@@ -190,12 +200,13 @@ func (fdp FuncDefParselet) Parse(parser *ParseTreeParser, op token.Token) (parse
 		return nil, errors.Join(fderr, err)
 	}
 	return parsetree.FuncDef{
-		FuncKw: funcKw,
-		Lparen: *lparen,
-		Args:   args,
-		Rparen: *rparen,
-		Lbrace: *lbrace,
-		Body:   body,
-		Rbrace: *rbrace,
+		FuncKw:     funcKw,
+		Lparen:     *lparen,
+		Args:       args,
+		Rparen:     *rparen,
+		ReturnType: returnType,
+		Lbrace:     *lbrace,
+		Body:       body,
+		Rbrace:     *rbrace,
 	}, err
 }

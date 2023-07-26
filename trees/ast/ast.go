@@ -180,8 +180,9 @@ func (fce FuncCallExpr) FirstTok() *token.Token { return fce.FirstToken }
 func (fce FuncCallExpr) LastTok() *token.Token  { return fce.LastToken }
 
 type FuncDef struct {
-	Args []FuncArg
-	Body []Stmt
+	Args       []FuncArg
+	ReturnType *Type
+	Body       []Stmt
 	Tokens
 }
 
@@ -193,3 +194,12 @@ type FuncArg struct {
 	Name Ident
 	Type Type
 }
+
+type ReturnStmt struct {
+	Expr Expr
+	Tokens
+}
+
+func (rs ReturnStmt) stmtTag()               {}
+func (rs ReturnStmt) FirstTok() *token.Token { return rs.FirstToken }
+func (rs ReturnStmt) LastTok() *token.Token  { return rs.LastToken }

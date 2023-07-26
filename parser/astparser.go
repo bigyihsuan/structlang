@@ -59,6 +59,18 @@ func (a AstParser) Stmt(stmt parsetree.Stmt) (s ast.Stmt) {
 				LastToken:  &stmt.Sc,
 			},
 		}
+	case parsetree.ReturnStmt:
+		var expr ast.Expr
+		if stmt.Expr != nil {
+			expr = a.Expr(stmt.Expr)
+		}
+		return ast.ReturnStmt{
+			Expr: expr,
+			Tokens: ast.Tokens{
+				FirstToken: &stmt.ReturnKw,
+				LastToken:  &stmt.Sc,
+			},
+		}
 	case parsetree.ExprStmt:
 		expr := a.Expr(stmt.Expr)
 		return ast.ExprStmt{
@@ -326,14 +338,21 @@ func (a AstParser) FuncDef(expr parsetree.FuncDef) ast.Expr {
 		})
 	}
 
+	var returnType *ast.Type = nil
+	if expr.ReturnType != nil {
+		rt := a.Type(*expr.ReturnType)
+		returnType = &rt
+	}
+
 	body := []ast.Stmt{}
 	for _, stmt := range expr.Body {
 		body = append(body, a.Stmt(stmt))
 	}
 
 	return ast.FuncDef{
-		Args: args,
-		Body: body,
+		Args:       args,
+		ReturnType: returnType,
+		Body:       body,
 		Tokens: ast.Tokens{
 			FirstToken: &expr.FuncKw,
 			LastToken:  &expr.Rbrace,

@@ -190,6 +190,12 @@ func (p *ParseTreeParser) Stmt() (stmt parsetree.Stmt, errs error) {
 			return vs, errors.Join(stmterr, errors.New("expected vardef with kw `let`"), err)
 		}
 		return vs, nil
+	case token.RETURN:
+		rs, err := p.ReturnStmt()
+		if err != nil {
+			return rs, errors.Join(stmterr, errors.New("expected return with kw `return`"), err)
+		}
+		return rs, nil
 	default:
 		expr, err := p.ExprStmt()
 		if err != nil {
@@ -446,15 +452,41 @@ func (p *ParseTreeParser) NameList() (names parsetree.SeparatedList[parsetree.Id
 	}
 }
 
-func (p *ParseTreeParser) ExprStmt() (expr parsetree.ExprStmt, err error) {
-	eserr := errors.New("in exprstmt")
-	e, err := p.Expr(precedence.BOTTOM)
+func (p *ParseTreeParser) ReturnStmt() (stmt parsetree.ReturnStmt, err error) {
+	rserr := errors.New("in returnstmt")
+	returnKw, err := p.expectGet(token.RETURN)
 	if err != nil {
-		return expr, errors.Join(eserr, err)
+		return stmt, errors.Join(rserr, err)
+	}
+	var expr parsetree.Expr
+	if hasSc, err := p.nextTokenIs(token.SEMICOLON); err != nil {
+		return stmt, errors.Join(rserr, err)
+	} else if !hasSc {
+		expr, err = p.Expr(precedence.BOTTOM)
+		if err != nil {
+			return stmt, err
+		}
 	}
 	sc, err := p.expectGet(token.SEMICOLON)
 	if err != nil {
-		return expr, errors.Join(eserr, err)
+		return stmt, errors.Join(rserr, err)
+	}
+	return parsetree.ReturnStmt{
+		ReturnKw: *returnKw,
+		Expr:     expr,
+		Sc:       *sc,
+	}, nil
+}
+
+func (p *ParseTreeParser) ExprStmt() (stmt parsetree.ExprStmt, err error) {
+	eserr := errors.New("in exprstmt")
+	e, err := p.Expr(precedence.BOTTOM)
+	if err != nil {
+		return stmt, errors.Join(eserr, err)
+	}
+	sc, err := p.expectGet(token.SEMICOLON)
+	if err != nil {
+		return stmt, errors.Join(eserr, err)
 	}
 	return parsetree.ExprStmt{Expr: e, Sc: *sc}, nil
 }

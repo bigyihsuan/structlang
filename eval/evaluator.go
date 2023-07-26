@@ -25,7 +25,7 @@ func NewEvaluator(code []ast.Stmt) Evaluator {
 	return e
 }
 
-func (e *Evaluator) Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error {
+func (e *Evaluator) Evaluate(currEnv *Env, stmts ...[]ast.Stmt) (Value, error) {
 	var errs error
 	code := e.Code
 	if len(stmts) > 0 {
@@ -43,6 +43,8 @@ func (e *Evaluator) Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error {
 			err = e.VarSet(currEnv, stmt)
 		case ast.ExprStmt:
 			_, err = e.Expr(currEnv, stmt.Expr)
+		case ast.ReturnStmt:
+			return e.ReturnStmt(currEnv, stmt)
 		default:
 			fmt.Printf("eval unknown stmt: %T\n", stmt)
 		}
@@ -50,7 +52,7 @@ func (e *Evaluator) Evaluate(currEnv *Env, stmts ...[]ast.Stmt) error {
 			errs = errors.Join(errs, err)
 		}
 	}
-	return errs
+	return nil, errs
 }
 
 func (e *Evaluator) TypeDef(currEnv *Env, stmt ast.TypeDef) error {
@@ -388,8 +390,7 @@ func (e *Evaluator) FuncCallExpr(currEnv *Env, expr ast.FuncCallExpr) (v Value, 
 		return v, fmt.Errorf("function `%s` not found", name.String())
 	} else {
 		fmt.Printf("eval: attempting to call func `%s` on `%v`\n", name.Name, args)
-		fn := (*fn).(builtin.Func)
-		returnValue = fn.Call(e, args...)
+		returnValue, err = (*fn).(builtin.Func).Call(e, args...)
 	}
 	return returnValue, err
 }
@@ -410,4 +411,13 @@ func (e *Evaluator) FuncDef(currEnv *Env, expr ast.FuncDef) (v Value, err error)
 		Body: body,
 		Env:  currEnv,
 	}, err
+}
+
+func (e *Evaluator) ReturnStmt(currEnv *Env, stmt ast.ReturnStmt) (v Value, err error) {
+	if stmt.Expr != nil {
+		retVal, err := e.Expr(currEnv, stmt.Expr)
+		return retVal.Return(true), err
+	} else {
+		return builtin.NewNil().Return(false), nil
+	}
 }
