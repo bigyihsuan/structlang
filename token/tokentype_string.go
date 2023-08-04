@@ -8,10 +8,8 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[NOT_FOUND - -1]
-	_ = x[ILLEGAL-0]
-	_ = x[WHITESPACE-1]
-	_ = x[COMMENT-2]
+	_ = x[NOT_FOUND-1]
+	_ = x[ILLEGAL-2]
 	_ = x[EOF-3]
 	_ = x[IDENT-4]
 	_ = x[literals_begin-5]
@@ -52,19 +50,20 @@ func _() {
 	_ = x[SLASH-40]
 	_ = x[GT-41]
 	_ = x[LT-42]
-	_ = x[GTEQ-43]
-	_ = x[LTEQ-44]
-	_ = x[symbols_end-45]
+	_ = x[DEQ-43]
+	_ = x[GTEQ-44]
+	_ = x[LTEQ-45]
+	_ = x[symbols_end-46]
 }
 
-const _TokenType_name = "NOT_FOUNDILLEGALWHITESPACECOMMENTEOFIDENTliterals_beginINTFLOATSTRINGliterals_endkeywords_beginSTRUCTTYPELETSETTRUEFALSENILANDORNOTFUNCRETURNkeywords_endsymbols_beginLBRACKETRBRACKETLBRACERBRACELPARENRPARENPERIODCOMMASEMICOLONCOLONEQARROWPLUSMINUSSTARSLASHGTLTGTEQLTEQsymbols_end"
+const _TokenType_name = "NOT_FOUNDILLEGALEOFIDENTliterals_beginINTFLOATSTRINGliterals_endkeywords_beginSTRUCTTYPELETSETTRUEFALSENILANDORNOTFUNCRETURNkeywords_endsymbols_beginLBRACKETRBRACKETLBRACERBRACELPARENRPARENPERIODCOMMASEMICOLONCOLONEQARROWPLUSMINUSSTARSLASHGTLTDEQGTEQLTEQsymbols_end"
 
-var _TokenType_index = [...]uint16{0, 9, 16, 26, 33, 36, 41, 55, 58, 63, 69, 81, 95, 101, 105, 108, 111, 115, 120, 123, 126, 128, 131, 135, 141, 153, 166, 174, 182, 188, 194, 200, 206, 212, 217, 226, 231, 233, 238, 242, 247, 251, 256, 258, 260, 264, 268, 279}
+var _TokenType_index = [...]uint16{0, 9, 16, 19, 24, 38, 41, 46, 52, 64, 78, 84, 88, 91, 94, 98, 103, 106, 109, 111, 114, 118, 124, 136, 149, 157, 165, 171, 177, 183, 189, 195, 200, 209, 214, 216, 221, 225, 230, 234, 239, 241, 243, 246, 250, 254, 265}
 
 func (i TokenType) String() string {
-	i -= -1
+	i -= 1
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {
-		return "TokenType(" + strconv.FormatInt(int64(i+-1), 10) + ")"
+		return "TokenType(" + strconv.FormatInt(int64(i+1), 10) + ")"
 	}
 	return _TokenType_name[_TokenType_index[i]:_TokenType_index[i+1]]
 }

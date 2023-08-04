@@ -18,12 +18,6 @@ everything is a struct. everything has fields for whatever reason.
 - `string` (chars are 1-length strings)
 - `nil` (only value of `nil` is `nil`)
 
-included fields:
-
-- `v`: itself
-- `name`: the name of the type, as a string
-- `len`: the "length" of the type. 0 for int, float, bool, nil.
-
 ### struct
 
 - `struct`
@@ -50,3 +44,4 @@ type list[T] = struct[T]{v T; next either[T,nil]}
 - bool: `true|false`
 - string: `".+"` except when escaped with `\`
 - nil: `nil`
+- ident: `[a-zA-Z]+`

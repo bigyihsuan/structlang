@@ -6,24 +6,20 @@ import (
 )
 
 type Token struct {
-	type_    TokenType
-	lexeme   string
-	position gotoken.Position
+	Type     TokenType
+	Lexeme   string
+	Position gotoken.Position
 }
 
-func NewToken(tokenType TokenType, lexeme string, offset, line, column int) Token {
+func New(tokenType TokenType, lexeme, filename string, offset, line, column int) Token {
 	t := Token{
-		type_:    tokenType,
-		lexeme:   lexeme,
-		position: gotoken.Position{Filename: "", Offset: offset, Line: line, Column: column},
+		Type:     tokenType,
+		Lexeme:   lexeme,
+		Position: gotoken.Position{Filename: filename, Offset: offset, Line: line, Column: column},
 	}
 	return t
 }
 
-func (t Token) Type() TokenType            { return t.type_ }
-func (t Token) Lexeme() string             { return t.lexeme }
-func (t Token) Position() gotoken.Position { return t.position }
-
 func (t Token) String() string {
-	return fmt.Sprintf("{%s, `%s`, %v}", t.type_, t.lexeme, t.position)
+	return fmt.Sprintf("{%s, `%s`, %v}", t.Type, t.Lexeme, t.Position)
 }

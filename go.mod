@@ -1,4 +1,4 @@
-module github.com/bigyihsuan/structlang
+module structlang
 
 go 1.20
 

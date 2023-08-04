@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bigyihsuan/structlang/eval"
-	"github.com/bigyihsuan/structlang/lexer"
-	"github.com/bigyihsuan/structlang/parser"
-	"github.com/bigyihsuan/structlang/token"
+	"structlang/lexer"
+	"structlang/repl"
+	"structlang/token"
+
 	"github.com/jessevdk/go-flags"
-	"github.com/kr/pretty"
 )
 
 const srcTemplate = `"""
@@ -27,12 +26,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if opts.File != "" && opts.Code != "" {
+	if opts.File == "" && opts.Code == "" {
+		repl.Start(os.Stdin, os.Stdout)
+	} else if opts.File != "" && opts.Code != "" {
 		fmt.Fprintln(os.Stderr, "-f/--file and -c/--code flags are mutually exclusive")
 		os.Exit(1)
 	}
 
 	var src string
+	var filename string
 
 	if opts.File != "" {
 		bytes, err := os.ReadFile(string(opts.File))
@@ -41,70 +43,19 @@ func main() {
 			return
 		}
 		src = string(bytes)
+		filename = string(opts.File)
 	} else if opts.Code != "" {
 		src = string(opts.Code)
+		filename = ""
 	}
-	src += "\n"
 
-	lex, _ := lexer.NewLexer(src)
+	lex := lexer.New(src, filename)
 	if opts.Debug {
 		fmt.Printf(srcTemplate, src)
 		fmt.Println()
 	}
 
-	var tokens []token.Token
-	tok := lex.Lex()
-	for tok.Type() != token.EOF {
-		tokens = append(tokens, tok)
-		tok = lex.Lex()
-	}
-
-	tokens = lexer.ClearComments(tokens)
-
-	if opts.Debug {
-		for _, tok := range tokens {
-			fmt.Println(tok.String())
-		}
-		fmt.Println()
-	}
-
-	p := parser.NewParser(tokens)
-	tree, errs := p.Parse()
-	if opts.Debug {
-		pretty.Println(tree)
-		fmt.Println()
-		for _, stmt := range tree {
-			fmt.Println(stmt)
-		}
-	}
-	if errs != nil {
-		fmt.Fprintln(os.Stderr, errs)
-		return
-	}
-
-	astparser := parser.NewAstParser(tree)
-	asttree := astparser.Parse()
-	if opts.Debug {
-		pretty.Println(asttree)
-		fmt.Println()
-	}
-
-	evaluator := eval.NewEvaluator(asttree)
-	_, err = evaluator.Evaluate(&evaluator.BaseEnv)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	// pretty.Println(evaluator.BaseEnv)
-	if opts.Debug {
-		fmt.Println("types:\n=======")
-		for id, ty := range evaluator.BaseEnv.Types {
-			fmt.Printf("%s = %s\n", id, ty.String())
-		}
-		fmt.Println()
-		fmt.Println("vars:\n=======")
-		for id, val := range evaluator.BaseEnv.Variables {
-			fmt.Printf("%s %s = %v\n", id, val.TypeName(), val)
-		}
+	for tok := lex.NextToken(); tok.Type != token.EOF; tok = lex.NextToken() {
+		fmt.Println(tok)
 	}
 }

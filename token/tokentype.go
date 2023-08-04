@@ -5,18 +5,15 @@ package token
 type TokenType int
 
 const (
-	NOT_FOUND TokenType = iota - 1
+	_ TokenType = iota
+	NOT_FOUND
 	ILLEGAL
-	WHITESPACE
-	COMMENT
 	EOF
 
 	IDENT
 	literals_begin
 	INT
 	FLOAT
-	// BOOL_TRUE
-	// BOOL_FALSE
 	STRING
 	literals_end
 
@@ -54,17 +51,15 @@ const (
 	SLASH
 	GT
 	LT
-	// EQ (double equal?)
+	DEQ
 	GTEQ
 	LTEQ
 	symbols_end
 )
 
 var tokens = [...]string{
-	ILLEGAL:    "ILLEGAL",
-	WHITESPACE: "WHITESPACE",
-	COMMENT:    "COMMENT",
-	EOF:        "EOF",
+	ILLEGAL: "ILLEGAL",
+	EOF:     "EOF",
 
 	IDENT: "IDENT",
 	INT:   "INT",
@@ -104,9 +99,9 @@ var tokens = [...]string{
 	SLASH:     "/",
 	GT:        ">",
 	LT:        "<",
-	// EQ (double equal?): "",
-	GTEQ: ">=",
-	LTEQ: "<=",
+	DEQ:       "==",
+	GTEQ:      ">=",
+	LTEQ:      "<=",
 }
 
 var primitives []TokenType
@@ -152,13 +147,13 @@ func IsKeyword(s string) bool {
 	}
 	return false
 }
-func GetKeyword(s string) TokenType {
+func GetKeywordOrIdent(s string) TokenType {
 	for i := keywords_begin + 1; i < keywords_end; i++ {
 		if s == tokens[i] {
 			return i
 		}
 	}
-	return NOT_FOUND
+	return IDENT
 }
 
 func IsLiteral(tt TokenType) bool {
