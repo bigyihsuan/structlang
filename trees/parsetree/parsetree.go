@@ -62,7 +62,7 @@ type FieldAccess struct {
 
 func (fa FieldAccess) exprTag()       {}
 func (fa FieldAccess) lvalueTag()     {}
-func (fa FieldAccess) String() string { return fmt.Sprintf("(-> %s %s)", fa.Lvalue, fa.Field) }
+func (fa FieldAccess) String() string { return fmt.Sprintf("(%s -> %s)", fa.Lvalue, fa.Field) }
 
 type StructLiteral struct {
 	TypeName Type
@@ -121,12 +121,18 @@ func (td TypeDef) String() string {
 	return fmt.Sprintf("(type %s = %s ;)", td.TypeName, td.StructDef)
 }
 
-type Type struct {
+type Type interface {
+	typeTag()
+	fmt.Stringer
+}
+
+type SimpleType struct {
 	TypeName Ident
 	TypeVars *TypeVars
 }
 
-func (t Type) String() string {
+func (t SimpleType) typeTag() {}
+func (t SimpleType) String() string {
 	return fmt.Sprintf("(%s%s)", t.TypeName, t.TypeVars)
 }
 
@@ -143,6 +149,25 @@ func (tv TypeVars) String() string {
 		types = append(types, ty.String())
 	}
 	return fmt.Sprintf("[%s]", strings.Join(types, ","))
+}
+
+type FuncType struct {
+	FuncKw     token.Token
+	TypeVars   *TypeVars
+	Lparen     token.Token
+	Args       SeparatedList[Type, token.Token]
+	Rparen     token.Token
+	ReturnType Type
+}
+
+func (ft FuncType) typeTag() {}
+func (ft FuncType) String() string {
+	args := []string{}
+	for _, pair := range ft.Args {
+		arg := pair.First
+		args = append(args, arg.String())
+	}
+	return fmt.Sprintf("(func %s (%s) %s)", ft.TypeVars, args, ft.ReturnType)
 }
 
 type StructDef struct {
@@ -194,7 +219,7 @@ type InfixExpr struct {
 
 func (ie InfixExpr) exprTag() {}
 func (ie InfixExpr) String() string {
-	return fmt.Sprintf("(%s %s %s)", ie.Op.Lexeme(), ie.Left, ie.Right)
+	return fmt.Sprintf("(%s %s %s)", ie.Left, ie.Op.Lexeme(), ie.Right)
 }
 
 type GroupingExpr struct {
@@ -230,7 +255,7 @@ type FuncDef struct {
 	Lparen     token.Token
 	Args       SeparatedList[FuncArg, token.Token]
 	Rparen     token.Token
-	ReturnType *Type
+	ReturnType Type
 	Lbrace     token.Token
 	Body       []Stmt
 	Rbrace     token.Token

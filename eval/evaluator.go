@@ -89,7 +89,7 @@ func (e *Evaluator) StructDef(currEnv *Env, structDef ast.StructDef) (st Type, e
 
 func (e *Evaluator) TypeName(currEnv *Env, typename ast.Type) (TypeName, error) {
 	var type_ TypeName
-	name := typename.Name.Name
+	name := typename.Name
 	vars := []TypeName{}
 	for _, typeArg := range typename.Vars {
 		arg, _ := e.TypeName(currEnv, typeArg)
@@ -197,7 +197,7 @@ func (e *Evaluator) Literal(currEnv *Env, expr ast.Literal) (v Value, err error)
 	}
 }
 
-func (e *Evaluator) TypeVars(currEnv *Env, types []ast.Type) (tv []TypeName, err error) {
+func (e *Evaluator) TypeVars(currEnv *Env, types []ast.SimpleType) (tv []TypeName, err error) {
 	for _, t := range types {
 		typeName, err := e.TypeName(currEnv, t)
 		if err != nil {

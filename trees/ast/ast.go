@@ -74,14 +74,31 @@ func (fa FieldAccess) lvalueTag()             {}
 func (fa FieldAccess) FirstTok() *token.Token { return fa.Lvalue.FirstTok() }
 func (fa FieldAccess) LastTok() *token.Token  { return fa.Field.LastToken }
 
-type Type struct {
+type Type interface {
+	typeTag()
+	HasTokens
+}
+
+type SimpleType struct {
 	Name Ident
 	Vars []Type
 	Tokens
 }
 
-func (t Type) FirstTok() *token.Token { return t.FirstToken }
-func (t Type) LastTok() *token.Token  { return t.LastToken }
+func (t SimpleType) typeTag()               {}
+func (t SimpleType) FirstTok() *token.Token { return t.FirstToken }
+func (t SimpleType) LastTok() *token.Token  { return t.LastToken }
+
+type FuncType struct {
+	Vars       []Type
+	Args       []Type
+	ReturnType Type
+	Tokens
+}
+
+func (t FuncType) typeTag()               {}
+func (t FuncType) FirstTok() *token.Token { return t.FirstToken }
+func (t FuncType) LastTok() *token.Token  { return t.LastToken }
 
 type StructDef struct {
 	Vars   []Type
@@ -181,7 +198,7 @@ func (fce FuncCallExpr) LastTok() *token.Token  { return fce.LastToken }
 
 type FuncDef struct {
 	Args       []FuncArg
-	ReturnType *Type
+	ReturnType Type
 	Body       []Stmt
 	Tokens
 }

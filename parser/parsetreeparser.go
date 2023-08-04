@@ -300,8 +300,15 @@ func (p *ParseTreeParser) TypeDef() (td parsetree.TypeDef, errs error) {
 	return parsetree.TypeDef{TypeKw: *type_, TypeName: typename, Eq: *eq, StructDef: structDef, Sc: *sc}, nil
 }
 
-func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
+func (p *ParseTreeParser) Type() (ty parsetree.Type, err error) {
 	tyerr := errors.New("in type")
+
+	if isFunc, err := p.nextTokenIs(token.FUNC); err != nil {
+		return ty, errors.Join(tyerr, err)
+	} else if isFunc {
+		return p.FuncType()
+	}
+
 	typename, err := p.Ident()
 	if err != nil {
 		return ty, errors.Join(tyerr, err)
@@ -310,21 +317,62 @@ func (p *ParseTreeParser) Type() (ty parsetree.Type, errs error) {
 	if err != nil {
 		return ty, errors.Join(tyerr, errors.New("expected typevars"), err)
 	}
-	return parsetree.Type{TypeName: typename, TypeVars: typevars}, nil
+	return parsetree.SimpleType{TypeName: typename, TypeVars: typevars}, nil
+}
+
+func (p *ParseTreeParser) FuncType() (ft parsetree.FuncType, err error) {
+	fterr := errors.New("in functype")
+	funcKw, err := p.expectGet(token.FUNC)
+	if err != nil {
+		return ft, errors.Join(fterr, err)
+	}
+	typeVars, err := p.TypeVars()
+	if err != nil {
+		return ft, errors.Join(fterr, err)
+	}
+	lparen, err := p.expectGet(token.LPAREN)
+	if err != nil {
+		return ft, errors.Join(fterr, err)
+	}
+	args, err := p.TypeVarParams(token.RPAREN)
+	if err != nil {
+		return ft, errors.Join(fterr, err)
+	}
+	rparen, err := p.expectGet(token.RPAREN)
+	if err != nil {
+		return ft, errors.Join(fterr, err)
+	}
+	var returnType parsetree.Type
+	if hasReturnType, err := p.nextTokenIsAny(token.FUNC, token.IDENT); err != nil {
+		return ft, errors.Join(fterr, err)
+	} else if hasReturnType {
+		returnType, err = p.Type()
+		if err != nil {
+			return ft, errors.Join(fterr, err)
+		}
+	}
+	return parsetree.FuncType{
+		FuncKw:     *funcKw,
+		TypeVars:   typeVars,
+		Lparen:     *lparen,
+		Args:       args,
+		Rparen:     *rparen,
+		ReturnType: returnType,
+	}, err
 }
 
 func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 	tvserr := errors.New("in typevars")
-	if peeked, err := p.peekNextToken(); err != nil {
+	if isLbracket, err := p.nextTokenIs(token.LBRACKET); err != nil {
 		return tvs, errors.Join(tvserr, err)
-	} else if peeked.Type() != token.LBRACKET {
+	} else if !isLbracket {
 		return nil, nil
 	}
 	lbracket, err := p.expectGet(token.LBRACKET)
 	if err != nil {
 		return tvs, errors.Join(tvserr, err)
 	}
-	typevars, err := p.TypeVarParams()
+	typevars, err := p.TypeVarParams(token.RBRACKET)
 	if err != nil {
 		return tvs, errors.Join(tvserr, errors.New("expected typevar params"), err)
 	}
@@ -335,12 +383,12 @@ func (p *ParseTreeParser) TypeVars() (tvs *parsetree.TypeVars, errs error) {
 	return &parsetree.TypeVars{Lbracket: *lbracket, TypeVars: typevars, Rbracket: *rbracket}, nil
 }
 
-func (p *ParseTreeParser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.Type, token.Token], errs error) {
+func (p *ParseTreeParser) TypeVarParams(endingToken token.TokenType) (tv parsetree.SeparatedList[parsetree.Type, token.Token], errs error) {
 	tvperr := errors.New("in typevar params")
 	for {
-		if peeked, err := p.peekNextToken(); err != nil {
+		if isIdentOrNil, err := p.nextTokenIsAny(token.IDENT, token.NIL); err != nil {
 			return tv, errors.Join(tvperr, err)
-		} else if peeked.Type() != token.IDENT && peeked.Type() != token.NIL {
+		} else if !isIdentOrNil {
 			// 0 eles, or with trailing sep
 			return tv, nil
 		}
@@ -350,7 +398,7 @@ func (p *ParseTreeParser) TypeVarParams() (tv parsetree.SeparatedList[parsetree.
 		}
 		if peeked, err := p.peekNextToken(); err != nil {
 			return tv, errors.Join(tvperr, err)
-		} else if tt := peeked.Type(); tt == token.RBRACE || tt != token.COMMA {
+		} else if tt := peeked.Type(); tt == endingToken || tt != token.COMMA {
 			// with no trailing sep
 			tv = append(tv, util.Pair[parsetree.Type, *token.Token]{First: typename, Last: nil})
 			return

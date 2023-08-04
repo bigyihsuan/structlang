@@ -1,0 +1,8 @@
+let add = func(k int) func(int)int {
+    return func(n int)int{return n+k;};
+};
+
+let addThree = add(3);
+println(addThree(10));
+
+println(add(5)(20));

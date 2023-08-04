@@ -168,7 +168,7 @@ func (fdp FuncDefParselet) Parse(parser *ParseTreeParser, op token.Token) (parse
 	if err != nil {
 		return nil, errors.Join(fderr, err)
 	}
-	var returnType *parsetree.Type = nil
+	var returnType parsetree.Type
 	if hasReturnType, err := parser.nextTokenIsAny(token.IDENT, token.FUNC); err != nil {
 		return nil, errors.Join(fderr, err)
 	} else if hasReturnType {
@@ -176,7 +176,7 @@ func (fdp FuncDefParselet) Parse(parser *ParseTreeParser, op token.Token) (parse
 		if err != nil {
 			return nil, errors.Join(fderr, err)
 		}
-		returnType = &rt
+		returnType = rt
 	}
 	lbrace, err := parser.expectGet(token.LBRACE)
 	if err != nil {

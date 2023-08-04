@@ -166,7 +166,7 @@ func (a AstParser) StructLiteral(expr parsetree.StructLiteral) (sl ast.StructLit
 		TypeName: typeName,
 		Fields:   fields,
 		Tokens: ast.Tokens{
-			FirstToken: typeName.FirstToken,
+			FirstToken: typeName.FirstTok(),
 			LastToken:  &lastToken,
 		},
 	}
@@ -186,6 +186,15 @@ func (a AstParser) StructLiteralField(field parsetree.StructLiteralField) (slf a
 }
 
 func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
+	switch type_ := type_.(type) {
+	case parsetree.SimpleType:
+		return a.SimpleType(type_)
+	case parsetree.FuncType:
+		return a.FuncType(type_)
+	}
+	return
+}
+func (a AstParser) SimpleType(type_ parsetree.SimpleType) (t ast.SimpleType) {
 	typename := a.Ident(type_.TypeName)
 	typevars := a.TypeVars(type_.TypeVars)
 	firsttoken := type_.TypeName.Name
@@ -195,12 +204,35 @@ func (a AstParser) Type(type_ parsetree.Type) (t ast.Type) {
 	} else {
 		lasttoken = type_.TypeVars.Rbracket
 	}
-	return ast.Type{
+	return ast.SimpleType{
 		Name: typename,
 		Vars: typevars,
 		Tokens: ast.Tokens{
 			FirstToken: &firsttoken,
 			LastToken:  &lasttoken,
+		},
+	}
+}
+func (a AstParser) FuncType(type_ parsetree.FuncType) (t ast.FuncType) {
+	vars := a.TypeVars(type_.TypeVars)
+	args := []ast.Type{}
+	for _, pair := range type_.Args {
+		typename := pair.First
+		t := a.Type(typename)
+		args = append(args, t)
+	}
+	returnType := a.Type(type_.ReturnType)
+	lastToken := type_.Rparen
+	if returnType != nil {
+		lastToken = *returnType.LastTok()
+	}
+	return ast.FuncType{
+		Vars:       vars,
+		Args:       args,
+		ReturnType: returnType,
+		Tokens: ast.Tokens{
+			FirstToken: &type_.FuncKw,
+			LastToken:  &lastToken,
 		},
 	}
 }
@@ -247,7 +279,7 @@ func (a AstParser) StructField(field parsetree.StructField) (f ast.StructField) 
 	}
 	f.Type = a.Type(field.Type)
 	f.FirstToken = f.Names[0].FirstToken
-	f.LastToken = f.Type.LastToken
+	f.LastToken = f.Type.LastTok()
 	return f
 }
 
@@ -338,10 +370,10 @@ func (a AstParser) FuncDef(expr parsetree.FuncDef) ast.Expr {
 		})
 	}
 
-	var returnType *ast.Type = nil
+	var returnType ast.Type
 	if expr.ReturnType != nil {
-		rt := a.Type(*expr.ReturnType)
-		returnType = &rt
+		rt := a.Type(expr.ReturnType)
+		returnType = rt
 	}
 
 	body := []ast.Stmt{}
