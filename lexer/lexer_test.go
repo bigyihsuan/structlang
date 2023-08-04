@@ -31,6 +31,11 @@ func TestLexer(t *testing.T) {
 		{token.IDENT, "x"},
 		{token.EQ, "="},
 		{token.INT, "1"},
+		{token.SEMICOLON, ";"},
+		{token.EOF, ""},
+		{token.EOF, ""},
+		{token.EOF, ""},
+		{token.EOF, ""},
 	}
 
 	l := New(tests, "TEST")
