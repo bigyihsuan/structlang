@@ -52,6 +52,7 @@ const (
 	GT
 	LT
 	DEQ
+	NEQ
 	GTEQ
 	LTEQ
 	symbols_end
@@ -100,6 +101,7 @@ var tokens = [...]string{
 	GT:        ">",
 	LT:        "<",
 	DEQ:       "==",
+	NEQ:       "==",
 	GTEQ:      ">=",
 	LTEQ:      "<=",
 }

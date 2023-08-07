@@ -42,7 +42,7 @@ func New(src any, filename string) *Lexer {
 	return l
 }
 
-func (l *Lexer) NextToken() token.Token {
+func (l *Lexer) GetNextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()

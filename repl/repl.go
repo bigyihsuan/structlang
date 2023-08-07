@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"structlang/lexer"
-	"structlang/token"
+	"structlang/parser"
 )
 
 const PROMPT = ">>> "
@@ -23,8 +23,17 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.New([]rune(line), "REPL")
-		for t := l.NextToken(); t.Type != token.EOF; t = l.NextToken() {
-			io.WriteString(out, t.String()+"\n")
+		// for t := l.GetNextToken(); t.Type != token.EOF; t = l.GetNextToken() {
+		// 	io.WriteString(out, t.String()+"\n")
+		// }
+		p := parser.New(l)
+		program := p.Program()
+		if len(p.Errors()) != 0 {
+			for _, err := range p.Errors() {
+				fmt.Fprint(out, err)
+			}
+			continue
 		}
+		fmt.Fprint(out, program.String()+"\n")
 	}
 }

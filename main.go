@@ -55,7 +55,7 @@ func main() {
 		fmt.Println()
 	}
 
-	for tok := lex.NextToken(); tok.Type != token.EOF; tok = lex.NextToken() {
+	for tok := lex.GetNextToken(); tok.Type != token.EOF; tok = lex.GetNextToken() {
 		fmt.Println(tok)
 	}
 }
